@@ -10,21 +10,27 @@ public class Hex
 
     public Empire ControllingEmpire;
 
-    public Hex(){
+    public List<Ship> ShipsOnHex;
 
+    public HexUI info;
+
+    public HexObject referenceObject;
+
+
+    public Hex(){
+        ShipsOnHex = new List<Ship>();
+        info = new HexUI();
     }
 
     public void TakeControl(Empire empire){
         ControllingEmpire = empire;
         color = empire.empireColor;
+        referenceObject.color = empire.empireColor;
+        empire.owningHexes.Add(this); 
     }
 
     public virtual void Initialize(){
         return;
-    }
-
-    public virtual Color GetColor(){
-        return Color.black;
     }
 
     public virtual bool Interact(){
@@ -38,6 +44,33 @@ public class Hex
     public virtual void GiveOptions(){
         return;
     }
+
+    public virtual Color GetColor(){
+        return Color.black;
+    }
+
+    public virtual bool CheckForColonyShip(){
+        for(int i = 0; i < ShipsOnHex.Count; i++){
+            if(ShipsOnHex[i].name == "Colony Ship"){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public virtual bool DestroyColonyShip(){
+        for(int i = 0; i < ShipsOnHex.Count; i++){
+            if(ShipsOnHex[i].name == "Colony Ship"){
+                Ship ship = ShipsOnHex[i];
+                ShipsOnHex.Remove(ship);
+                ship.OwningEmpire.owningUnits.Remove(ship);
+
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     public static Hex CreateNewHex(System.Random seed, HexSettings hexSettings){
 
@@ -87,11 +120,47 @@ public class Hex
         return returningHex;
 
     }
+
+    public string GetShipInfo(int index){
+        string info = " ";
+        if(ShipsOnHex.Count != 0){
+            info = "There is a " + ShipsOnHex[index % ShipsOnHex.Count].name + " on this tile.";
+        } else {
+            info = " ";
+        }
+        return info;
+    }
+
+    public string GetShipLetter(int index){
+        string info = " ";
+        if(ShipsOnHex.Count != 0){
+            info = ShipsOnHex[index % ShipsOnHex.Count].representingLetter;
+        } else {
+            info = " ";
+        }
+        return info;
+    }
+
+    public virtual Color GetPlanetColor(int index){
+        return Color.black;//ColorFromPlanet(planets[index]);
+    }
+
+    public virtual string GetPlanetString(int index){
+        return "";//GetInfoOnPlanet(planets[index]);
+    }
+
+    public virtual int GetPlanetsLength(){
+        return 0;
+    }
+
+    public virtual int GetShipCount(){
+        return ShipsOnHex.Count;
+    }
 }
 [System.Serializable]
 public class SystemHex : Hex{
 
-    Planet[] planets;
+    public Planet[] planets;
 
     public Color color = Color.white;
 
@@ -109,6 +178,14 @@ public class SystemHex : Hex{
 
     public override bool Interact(){
         
+        string info = GetInfo();
+        //Debug.Log(info);
+
+        return true;
+
+    }
+
+    private string GetInfo(){
         string info = (planets.Length == 1) ? "This system has " + planets.Length + " planet." : "This system has " + planets.Length + " planets.";
         for(int i = 0; i < planets.Length; i++){
             info = info + "\nPlanet " + (i+1) + " is " + planets[i].GetInfo();
@@ -119,14 +196,39 @@ public class SystemHex : Hex{
         } else {
             info = info + "The " + ControllingEmpire.Name + " Empire controls this tile";
         }
-        Debug.Log(info);
 
-        return true;
-
+        return info;
     }
+
     public override string GetType(){
         return "System";
     }
+
+    public override Color GetPlanetColor(int index){
+        return ColorFromPlanet(planets[index%planets.Length]);
+    }
+
+    public Color ColorFromPlanet(Planet planet){
+        return planet.GetColor();
+    }
+
+    public override string GetPlanetString(int index){
+        return GetInfoOnPlanet(planets[index%planets.Length], index%planets.Length);
+    }
+
+    private string GetInfoOnPlanet(Planet planet,int index){
+        return "Planet " + (index+1) + " is a " + planet.GetInfo();
+    }
+
+    public override int GetPlanetsLength(){
+        return planets.Length;
+    }
+    
+    public void Colonize(Empire empire, int index){
+        TakeControl(empire);
+        planets[index].Colonize(empire);
+    }
+    
 }
 [System.Serializable]
 public class SpaceHex : Hex{
@@ -135,6 +237,8 @@ public class SpaceHex : Hex{
         return Color.black;
     }
 
+
+
     public override bool Interact(){
         string info = "Hex has nothing on it";
         if(ControllingEmpire == null){
@@ -142,12 +246,20 @@ public class SpaceHex : Hex{
         } else {
             info = info + ". The " + ControllingEmpire.Name + " Empire controls this tile";
         }
-        Debug.Log(info);
+        //Debug.Log(info);
 
         return false;
     }
 
     public override string GetType(){
         return "Space";
+    }
+
+    public override Color GetPlanetColor(int index){
+        return new Color(0, 0, 0, 0);
+    }
+
+    public override string GetPlanetString(int index){
+        return "There is nothing of interest on this hex";
     }
 }

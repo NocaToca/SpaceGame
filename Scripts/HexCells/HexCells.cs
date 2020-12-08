@@ -130,7 +130,7 @@ public class HexCells : MonoBehaviour
 		cell.transform.SetParent(transform, false);
 		cell.transform.localPosition = position;
 
-
+		hexes[z,x].hex.referenceObject = hexes[z,x];
 	
 		//cell.color = defaultColor;
 

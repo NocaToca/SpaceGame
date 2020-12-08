@@ -4,12 +4,34 @@ using UnityEngine;
 
 public class Planet
 {
+    public bool Colonized = false;
+    public Empire EmpireThatIsColonized;
+
     public Planet(){
 
     }
 
+    public void Colonize(Empire empire){
+        Colonized = true;
+        EmpireThatIsColonized = empire;
+    }
+
+    public string GetColonizedText(){
+        string info = "";
+        if(Colonized){
+            info = "The " + EmpireThatIsColonized.Name + " colonized this planet";
+        } else {
+            info = "No empire has conolonized this planet";
+        }
+        return info;
+    }
+
     public virtual string GetInfo(){
         return "Error! A Planet type is not specified!";
+    }
+
+    public virtual Color GetColor(){
+        return Color.black;
     }
 
     public static Planet[] GeneratePlanets(int numPlanets){
@@ -61,21 +83,36 @@ public class Planet
 public class ArcticPlanet : Planet{
 
     public override string GetInfo(){
-        return "an Artic Planet";
+        string info = "an Artic Planet. ";
+        return info + GetColonizedText();
+    }
+
+    public override Color GetColor(){
+        return Color.blue;
     }
 
 }
 public class ContinetalPlanet : Planet{
 
     public override string GetInfo(){
-        return "a Continetal Planet";
+        string info =  "a Continetal Planet";
+        return info + GetColonizedText();
+    }
+
+    public override Color GetColor(){
+        return Color.green;
     }
 
 }
 public class MoltenPlanet : Planet{
 
     public override string GetInfo(){
-        return "a Molten Planet";
+        string info =  "a Molten Planet";
+        return info + GetColonizedText();
+    }
+
+    public override Color GetColor(){
+        return Color.red;
     }
 
 }

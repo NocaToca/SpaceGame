@@ -5,22 +5,31 @@ using UnityEngine;
 public class Board : MonoBehaviour
 {
 
-    public Color spaceColor = Color.black;
-	public Color systemColor = Color.white;
+    public static int width = 6;
+    public static int height = 6;
 
-    HexCells cellGen;
+    public static Color spaceColor = Color.black;
+	public static Color systemColor = Color.white;
+    public static Color highlightColor = Color.magenta;
 
-    HexObject[,] hexes;
+    static bool RequestUpdate = false;
+
+    static HexCells cellGen;
+
+    static HexObject[,] hexes;
     
     bool release;
 
     [HideInInspector]
     public List<Empire> empires;
 
+    public List<Unit> units;
+
     void Awake(){
         cellGen = GetComponentInChildren<HexCells>();
         cellGen.spaceColor = spaceColor;
         cellGen.systemColor = systemColor;
+        units = new List<Unit>();
     }
 
     // Start is called before the first frame update
@@ -57,12 +66,32 @@ public class Board : MonoBehaviour
         systemHexes[ran].hex.TakeControl(empires[0]);
         systemHexes[ran].color = empires[0].empireColor;
 
+        Ship[] addingUnits = new Ship[2];
+        addingUnits[0] = new ColonyShip(empires[0], systemHexes[ran].hex);
+        addingUnits[1] = new ProtectorShip(empires[0], systemHexes[ran].hex);
+
+        systemHexes[ran].hex.ShipsOnHex.Add(addingUnits[0]);
+        systemHexes[ran].hex.ShipsOnHex.Add(addingUnits[1]);
+
+
+        //Woah! I didnt know I could do this! I have to edit a lot of code for this now
+        if(systemHexes[ran].hex is SystemHex){
+            SystemHex sysHex = (SystemHex)systemHexes[ran].hex;
+            sysHex.planets[0].Colonize(empires[0]);
+        }
+        
+
+        units.Add(addingUnits[0]);
+        units.Add(addingUnits[1]);
+
         cellGen.makeCells();
 
     }
 
     void Update () {
-		
+		if(RequestUpdate){
+            cellGen.makeCells();
+        }
         
 	}
 
@@ -124,4 +153,49 @@ public class Board : MonoBehaviour
 
         
 	}
+
+    public static void DebugHighlight(HexObject hex){
+        hex.color = highlightColor;
+        cellGen.makeCells();
+    }
+
+    public static HexObject GetHex(Vector2 vect){
+        //Debug.Log(vect.x + "," + vect.y);
+        return hexes[(int)vect.y,(int)vect.x];
+    }
+
+    public static Vector2 FindHexCoordsInBoard(Hex hex){
+
+        for(int z = 0; z < hexes.GetLength(0); z++){
+            for(int x = 0; x < hexes.GetLength(1); x++){
+                if(hex == hexes[z,x].hex){
+                    return new Vector2(x, z);
+                }
+            }
+        }
+        return new Vector2(-1, -1);
+    }
+
+    public int GetHeight(){
+        return cellGen.height;
+    }
+    public int GetWidth(){
+        return cellGen.width;
+    }
+
+    public static void RequestMovement(Hex startingHex, Hex endingHex, Ship ship){
+        int index = 0;
+        Hex[] hexesInPath = HexBasedAStar.AStar(startingHex.referenceObject, endingHex.referenceObject, height, width);
+        Hex[] hexPathCopy = new Hex[hexesInPath.Length];
+        for(int i = hexesInPath.Length - 1; i >= 0; i--){
+            hexPathCopy[index] = hexesInPath[i];
+            index++;
+        }
+        if(ship.movementPoints >= hexPathCopy.Length){
+            ship.Move(hexPathCopy[hexPathCopy.Length-1]);
+        } else {
+            ship.Move(hexPathCopy[ship.movementPoints]);
+        }
+        RequestUpdate = true;
+    }
 }
