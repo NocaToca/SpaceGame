@@ -6,6 +6,8 @@ public class Unit{
 
     public Empire OwningEmpire;
 
+    public GameObject unitObject;
+
     public bool Type; //False = Land Unit | True = Ship Unit (I just made it a bool because theres two values)
 
     public string name;

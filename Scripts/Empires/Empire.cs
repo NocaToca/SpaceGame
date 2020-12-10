@@ -5,18 +5,13 @@ using UnityEngine;
 public class Empire
 {
     
-    public Color empireColor;
-
-    public List<Unit> owningUnits;
+    public int playerNumber;
 
     public string Name = "Noca";
 
-    public List<Hex> owningHexes;
-
-    public Empire(Color color){
-        empireColor = color;
-        owningUnits = new List<Unit>();
-        owningHexes = new List<Hex>();
+    public Empire(Color color, int playerNumber){
+        EmpireVisuals.empireColors.Add(color);
+        this.playerNumber = playerNumber;
     }
 
     public string GetText(){

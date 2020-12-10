@@ -10,8 +10,6 @@ public class HexObject : MonoBehaviour
 
     public HexMesh hexMesh;
 
-    public Color color;
-
     public bool hasBeenTouched = false;
 
     HexMesh display;

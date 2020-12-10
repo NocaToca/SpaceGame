@@ -38,7 +38,7 @@ public class HexMesh : MonoBehaviour {
 		meshCollider.sharedMesh = hexMesh;
 
 		MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-		meshRenderer.material.SetColor("Color_73CDFA71", cells.color);
+		meshRenderer.material.SetColor("Color_73CDFA71", HexVisuals.GetColor(cells.hex));
 		meshRenderer.material.SetVector("Center", cells.transform.position); 
 		
 		//meshRenderer.material = 
@@ -53,7 +53,7 @@ public class HexMesh : MonoBehaviour {
                 zero + Utilities.corners[i],
                 zero + Utilities.corners[i+1]
             );
-			AddTriangleColor(cell.color);
+			AddTriangleColor(HexVisuals.GetColor(cell.hex));
         }
 	}
 

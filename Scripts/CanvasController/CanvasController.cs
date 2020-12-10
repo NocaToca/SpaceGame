@@ -74,7 +74,17 @@ public class CanvasController : MonoBehaviour
         UpdateEmpireInfo(clickedHex);
         UpdateUnitInfo(clickedHex);
         DisableOrEnableButtons(clickedHex);
+        ShowHexCoords(clickedHex);
         MainController.DisableInteractions();
+    }
+
+    private void ShowHexCoords(Hex hex){
+        GameObject gameObject1 = this.transform.GetChild(0).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(3).gameObject;
+
+        Text text = gameObject2.GetComponent<Text>();
+        HexCoordinates coords = Board.GetHexPosition(hex);
+        text.text = coords.ToString();
     }
 
     private void UpdateUnitInfo(Hex hex){
@@ -90,8 +100,12 @@ public class CanvasController : MonoBehaviour
     }
 
     private void UpdateHexInfo(Hex clickedHex){
+        if(clickedHex is SystemHex){
+            ChangePlanetDisplayedColor(PlanetVisuals.GetPlanetColorFromPlanet(Board.GetPlanet(clickedHex, currentPlanetDisplayed)));
+        } else {
+            ChangePlanetDisplayedColor(new Color(0,0,0,0));
+        }
 
-        ChangePlanetDisplayedColor(clickedHex.GetPlanetColor(currentPlanetDisplayed));
         ShowPlanetInfoText(clickedHex);
         UpdatePlanetScrollText(clickedHex);
         CheckIfColonizable(clickedHex);
@@ -106,12 +120,16 @@ public class CanvasController : MonoBehaviour
         Button button = gameObject3.GetComponent<Button>();
         if(hex is SystemHex){
             SystemHex sys = (SystemHex)hex;
-            if(!sys.planets[currentPlanetDisplayed%sys.planets.Length].Colonized && sys.CheckForColonyShip()){
+            if(!sys.planets[currentPlanetDisplayed%sys.planets.Length].Colonized && Board.CheckForColonyShip(hex)){
                 button.interactable = true;
                 return;
             }
+            button.interactable = false;
+        } else {
+            gameObject3.SetActive(false);
         }
-        button.interactable = false;
+        
+        
     }
 
     private void UpdatePlanetScrollText(Hex hex){
@@ -158,8 +176,8 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject2 = gameObject1.transform.GetChild(1).gameObject;
 
         Image image = gameObject2.GetComponent<Image>();
-        if(hex.ControllingEmpire != null){
-            image.color = hex.ControllingEmpire.empireColor;
+        if(Board.IsHexControlled(hex)){
+            image.color = EmpireVisuals.GetEmpireColor(Board.GetEmpireThatControlsHex(hex));
         } else {
             image.color = new Color(0,0,0,0);
         }
@@ -172,8 +190,8 @@ public class CanvasController : MonoBehaviour
         
         Text text = gameObject2.GetComponentInChildren<Text>();
 
-        if(hex.ControllingEmpire != null){
-            text.text = hex.ControllingEmpire.GetText();
+        if(Board.IsHexControlled(hex)){
+            text.text = EmpireVisuals.GetEmpireText(Board.GetEmpireThatControlsHex(hex));
         } else {
             text.text = Empire.GetDefaultText();
         }
@@ -188,7 +206,7 @@ public class CanvasController : MonoBehaviour
 
         Text text = gameObject3.GetComponent<Text>();
 
-        text.text = hex.GetShipInfo(currentUnitDisplayed);
+        text.text = HexVisuals.GetShipText(hex, currentUnitDisplayed);
     }
 
     private void ChangeShipDisplayLetter(Hex hex){
@@ -198,7 +216,7 @@ public class CanvasController : MonoBehaviour
 
         Text text = gameObject2.GetComponent<Text>();
 
-        text.text = hex.GetShipLetter(currentUnitDisplayed);
+        text.text = HexVisuals.GetShipLetter(hex, currentUnitDisplayed);
 
     }
 
@@ -209,8 +227,8 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject3 = gameObject2.transform.GetChild(1).gameObject;
 
         Text text = gameObject3.GetComponent<Text>();
-        if(hex.GetShipCount() != 0){
-            text.text = "" + (currentUnitDisplayed%hex.GetShipCount()+1) + "/" + hex.GetShipCount();
+        if(Board.ShipsOnHex(hex).Length != 0){
+            text.text = "" + (currentUnitDisplayed%Board.ShipsOnHex(hex).Length+1) + "/" + Board.ShipsOnHex(hex).Length;
         } else {
             text.text = "";
         }
@@ -221,7 +239,7 @@ public class CanvasController : MonoBehaviour
         DisableOrEnablePlanetRightButton(hex, b);
         DisableOrEnablePlanetLeftButton(hex, b);
 
-        b = hex.GetShipCount() != 0;
+        b = Board.ShipsOnHex(hex).Length != 0;
         DisableOrEnableUnitRightButton(hex, b);
         DisableOrEnableUnitLeftButton(hex, b);
     }
@@ -263,13 +281,14 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject2 = gameObject1.transform.GetChild(2).gameObject;
         GameObject gameObject3 = gameObject2.transform.GetChild(4).gameObject;
 
-        gameObject3.SetActive(hex.ShipsOnHex.Count >= 1);
+        gameObject3.SetActive(Board.ShipsOnHex(hex).Length >= 1);
 
     }
 
     /*********************************************************************Interacting With Ships**********************************************************************************/
     public void MoveShip(){
-        Ship ship = MainController.displayingHex.ShipsOnHex[currentUnitDisplayed % MainController.displayingHex.ShipsOnHex.Count];
+        Ship[] ships = Board.ShipsOnHex(MainController.displayingHex);
+        Ship ship = ships[currentUnitDisplayed % ships.Length];
         MainController.RequestMovement(ship);
         MainController.EnableInteractions();
     }

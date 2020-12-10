@@ -5,8 +5,6 @@ using UnityEngine;
 public class Hex
 {
     public string type; 
-    
-    public Color color;
 
     public Empire ControllingEmpire;
 
@@ -20,13 +18,6 @@ public class Hex
     public Hex(){
         ShipsOnHex = new List<Ship>();
         info = new HexUI();
-    }
-
-    public void TakeControl(Empire empire){
-        ControllingEmpire = empire;
-        color = empire.empireColor;
-        referenceObject.color = empire.empireColor;
-        empire.owningHexes.Add(this); 
     }
 
     public virtual void Initialize(){
@@ -45,10 +36,6 @@ public class Hex
         return;
     }
 
-    public virtual Color GetColor(){
-        return Color.black;
-    }
-
     public virtual bool CheckForColonyShip(){
         for(int i = 0; i < ShipsOnHex.Count; i++){
             if(ShipsOnHex[i].name == "Colony Ship"){
@@ -57,20 +44,6 @@ public class Hex
         }
         return false;
     }
-
-    public virtual bool DestroyColonyShip(){
-        for(int i = 0; i < ShipsOnHex.Count; i++){
-            if(ShipsOnHex[i].name == "Colony Ship"){
-                Ship ship = ShipsOnHex[i];
-                ShipsOnHex.Remove(ship);
-                ship.OwningEmpire.owningUnits.Remove(ship);
-
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     public static Hex CreateNewHex(System.Random seed, HexSettings hexSettings){
 
@@ -121,25 +94,7 @@ public class Hex
 
     }
 
-    public string GetShipInfo(int index){
-        string info = " ";
-        if(ShipsOnHex.Count != 0){
-            info = "There is a " + ShipsOnHex[index % ShipsOnHex.Count].name + " on this tile.";
-        } else {
-            info = " ";
-        }
-        return info;
-    }
-
-    public string GetShipLetter(int index){
-        string info = " ";
-        if(ShipsOnHex.Count != 0){
-            info = ShipsOnHex[index % ShipsOnHex.Count].representingLetter;
-        } else {
-            info = " ";
-        }
-        return info;
-    }
+    
 
     public virtual Color GetPlanetColor(int index){
         return Color.black;//ColorFromPlanet(planets[index]);
@@ -153,34 +108,30 @@ public class Hex
         return 0;
     }
 
-    public virtual int GetShipCount(){
-        return ShipsOnHex.Count;
-    }
 }
 [System.Serializable]
 public class SystemHex : Hex{
 
     public Planet[] planets;
 
-    public Color color = Color.white;
+    bool[] planetsColonized;
+
+    //public Color color = Color.white;
 
     public override void Initialize(){
         float numPlanets = Random.Range(0.0f, 1.0f) * 6561.0f;
         numPlanets = Mathf.Sqrt(Mathf.Sqrt(numPlanets));
         int num = 10 - ((int)(numPlanets) + 1);
         planets = Planet.GeneratePlanets(num);
-        color = Color.white;
-    }
-
-    public override Color GetColor(){
-        return color;
+        planetsColonized = new bool[num];
+        for(int i = 0; i < num; i++){
+            planetsColonized[i] = false;
+        }
     }
 
     public override bool Interact(){
         
         string info = GetInfo();
-        //Debug.Log(info);
-
         return true;
 
     }
@@ -223,21 +174,19 @@ public class SystemHex : Hex{
     public override int GetPlanetsLength(){
         return planets.Length;
     }
-    
-    public void Colonize(Empire empire, int index){
-        TakeControl(empire);
-        planets[index].Colonize(empire);
+
+    public void AddColonizedPlanet(int index){
+        planetsColonized[index] = true;
+    }
+
+    public Planet GetPlanet(int index){
+        index %= planets.Length;
+        return planets[index];
     }
     
 }
 [System.Serializable]
 public class SpaceHex : Hex{
-
-    public override Color GetColor(){
-        return Color.black;
-    }
-
-
 
     public override bool Interact(){
         string info = "Hex has nothing on it";

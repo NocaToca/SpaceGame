@@ -135,12 +135,7 @@ public class HexCells : MonoBehaviour
 		//cell.color = defaultColor;
 
 		//hexes[z, x].displayHex = cell;
-
-		cellColors[i] = cell.hex.GetColor();
-
-		hexes[z, x].coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
 		
-		cell.color = cellColors[i];
 		cell.hasBeenTouched = debugTouch[i];
 
 		cells[i] = cell;

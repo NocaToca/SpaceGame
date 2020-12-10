@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Ship : Unit{
-
-    public Hex hex;
-
     public float health;
     public float damage;
-    public GameObject unitObject;
+    
+    public HexCoordinates ShipPosition;
 
     public string representingLetter;
 
@@ -19,23 +17,19 @@ public class Ship : Unit{
     //     this.hex = hex;
     // }
 
-    public void Move(Hex hex){
-        this.hex.ShipsOnHex.Remove(this);
-        this.hex = hex;
-        hex.ShipsOnHex.Add(this);
-    }
 
 }
 
 public class ColonyShip : Ship{
 
-    public ColonyShip(Empire empire, Hex hex){
+    public ColonyShip(Empire empire, HexCoordinates pos){
         OwningEmpire = empire;
-        this.hex = hex;
         Type = true;
         name = "Colony Ship";
         representingLetter = "C";
         movementPoints = 3;
+        ShipPosition = pos;
+
     }
 
     public void ColonizePlanet(Planet planet){
@@ -46,13 +40,13 @@ public class ColonyShip : Ship{
 
 public class ProtectorShip : Ship{
 
-    public ProtectorShip(Empire empire, Hex hex){
+    public ProtectorShip(Empire empire, HexCoordinates pos){
         OwningEmpire = empire;
-        this.hex = hex;
         Type = true;
         name = "Protector Ship";
         representingLetter = "P";
         movementPoints = 2;
+        ShipPosition = pos;
     }
 
 }

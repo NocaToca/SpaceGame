@@ -68,7 +68,11 @@ public class MainController : MonoBehaviour
                 if(Input.GetMouseButton(0)){
                     Hex hexToMoveTo = GetTileUnderMouse();
                     if(hexToMoveTo != null){
-                        Board.RequestMovement(movingShip.hex, hexToMoveTo, movingShip);
+                        Board.RequestMovement(hexToMoveTo, movingShip);
+                        if(CanvasController.HexInfoDisplayed){
+                            canvasController.GetRidOfHexInfo();
+                            displayingHex = null;
+                        }
                     } else {
                         if(CanvasController.HexInfoDisplayed){
                             canvasController.GetRidOfHexInfo();
@@ -96,7 +100,7 @@ public class MainController : MonoBehaviour
 
             
             } else
-            if(Input.GetKeyDown(KeyCode.Escape)){
+            if(Input.GetKeyDown(KeyCode.Space)){
 
                 if(CanvasController.HexInfoDisplayed){
                     canvasController.GetRidOfHexInfo();
@@ -181,12 +185,9 @@ public class MainController : MonoBehaviour
     }
 
     public static void Colonize(SystemHex hex, int index){
-        Empire empire = board.empires[0];
+        Empire empire = Board.empires[0];
         
-        hex.Colonize(empire, index);
-        if(!hex.DestroyColonyShip()){
-            
-        }
+        Board.ColonizePlanet(empire, hex, index);
         canvasController.DisplayHex(hex);
     }
 
