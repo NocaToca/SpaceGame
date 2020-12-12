@@ -29,6 +29,11 @@ public class CanvasController : MonoBehaviour
         }
     }
     
+    public void EndTurn(){
+        GameMode.EndTurn(Board.GetPlayerEmpire());
+        UpdateResourceDisplay();
+    }
+    
     public void DisplayHexInfo(){
         HexInfo.SetActive(true);
         HexInfoDisplayed = true;
@@ -109,6 +114,30 @@ public class CanvasController : MonoBehaviour
         ShowPlanetInfoText(clickedHex);
         UpdatePlanetScrollText(clickedHex);
         CheckIfColonizable(clickedHex);
+        UpdateResourceDisplay(clickedHex);
+
+    }
+
+    private void UpdateResourceDisplay(Hex hex){
+        GameObject gameObject1 = this.transform.GetChild(0).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(0).gameObject;
+        GameObject gameObject3 = gameObject2.transform.GetChild(5).gameObject;
+        GameObject gameObject4 = gameObject2.transform.GetChild(6).gameObject;
+
+        if(hex is SystemHex){
+            Resources planetResources = Board.GetPlanet(hex, currentPlanetDisplayed).GetNaturalResources();
+            
+            gameObject3.SetActive(true);
+            gameObject4.SetActive(true);
+
+            Text text = gameObject3.GetComponent<Text>();
+            text.text = "Gold: " + planetResources.GoldToString();
+            text = gameObject4.GetComponent<Text>();
+            text.text = "Prod: " + planetResources.ProdToString();
+        } else {
+            gameObject3.SetActive(false);
+            gameObject4.SetActive(false);
+        }
 
     }
 
@@ -119,6 +148,7 @@ public class CanvasController : MonoBehaviour
 
         Button button = gameObject3.GetComponent<Button>();
         if(hex is SystemHex){
+            gameObject3.SetActive(true);
             SystemHex sys = (SystemHex)hex;
             if(!sys.planets[currentPlanetDisplayed%sys.planets.Length].Colonized && Board.CheckForColonyShip(hex)){
                 button.interactable = true;
@@ -281,8 +311,49 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject2 = gameObject1.transform.GetChild(2).gameObject;
         GameObject gameObject3 = gameObject2.transform.GetChild(4).gameObject;
 
-        gameObject3.SetActive(Board.ShipsOnHex(hex).Length >= 1);
+        Ship[] ships = Board.ShipsOnHex(hex);
 
+        gameObject3.SetActive(ships.Length >= 1);
+
+        Button button = gameObject3.GetComponent<Button>();
+
+        if(ships.Length >= 1){
+            
+            if(ships[currentUnitDisplayed%ships.Length].availableMovementPoints == 0){
+                button.interactable = false;
+            } else {
+                button.interactable = true;
+            }
+            
+        }
+
+    }
+
+    private void UpdateResourceDisplay(){
+        UpdateGold();
+        UpdateProd();
+    }
+
+    private void UpdateGold(){
+        GameObject gameObject1 = this.transform.GetChild(2).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(0).gameObject;
+
+        Text text = gameObject2.GetComponent<Text>();
+
+        Resources empireRes = GameMode.GetPlayerResources();
+
+        text.text = "Gold: " + empireRes.GoldToString();
+    }
+
+    private void UpdateProd(){
+        GameObject gameObject1 = this.transform.GetChild(2).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(1).gameObject;
+
+        Text text = gameObject2.GetComponent<Text>();
+
+        Resources empireRes = GameMode.GetPlayerResources();
+
+        text.text = "Prod: " + empireRes.ProdToString();
     }
 
     /*********************************************************************Interacting With Ships**********************************************************************************/

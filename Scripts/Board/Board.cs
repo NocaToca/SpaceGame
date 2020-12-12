@@ -33,6 +33,7 @@ public class Board : MonoBehaviour
         cellGen.height = height;
         units = new List<Unit>();
         
+        
     }
 
     // Start is called before the first frame update
@@ -46,6 +47,7 @@ public class Board : MonoBehaviour
         }
 
         SpawnEmpires();
+        GameMode.AddEmpireResource(new Resources());
 
     }
 
@@ -196,10 +198,12 @@ public class Board : MonoBehaviour
             hexPathCopy[index] = hexesInPath[i];
             index++;
         }
-        if(ship.movementPoints >= hexPathCopy.Length){
+        if(ship.availableMovementPoints >= hexPathCopy.Length){
             Move(hexPathCopy[hexPathCopy.Length-1], ship);
+            ship.availableMovementPoints -= hexPathCopy.Length-1;
         } else {
-            Move(hexPathCopy[ship.movementPoints], ship);
+            Move(hexPathCopy[ship.availableMovementPoints], ship);
+            ship.availableMovementPoints = 0;
         }
         RequestUpdate = true;
     }
@@ -242,6 +246,8 @@ public class Board : MonoBehaviour
             DestroyShip(FilterColonyShips(ShipsOnHex(hex, empire))[0]);
             int i = GetEmpireNumber(empire);
             tilesOfEmpires[i].Add(sysHex);
+        } else {
+            Debug.LogError("You have asked to colonize a system that doesn't exist! Was the system tile perhaps post-generated?");
         }
         cellGen.makeCells();
     }
@@ -376,5 +382,125 @@ public class Board : MonoBehaviour
         }
         return null;
 
+    }
+
+    public static List<Planet> GetPlanets(Empire empire){
+        Hex[] hexes = FilterHexes(1, empire);
+        SystemHex[] sysHexes = new SystemHex[hexes.Length];
+        for(int i = 0; i < hexes.Length; i++){
+            sysHexes[i] = (SystemHex)hexes[i];
+        }
+
+        List<Planet> planets = new List<Planet>();
+        for(int i = 0; i < sysHexes.Length; i++){
+            int length = sysHexes[i].GetNumberOfPlanets();
+            for(int k = 0; k < length; k++){
+                planets.Add(GetPlanet(sysHexes[i], k));
+            }
+        }
+        return planets;
+    }
+
+    public static Resources GetEmpiresGeneration(Empire empire){
+        return GetPlanetGeneration(empire);
+    }
+
+    static List<Planet> FilterForColonizedPlanets(List<Planet> planets){
+        List<Planet> col = new List<Planet>();
+        foreach(Planet planet in planets){
+            if(planet.Colonized){
+                col.Add(planet);
+            }
+        }
+        return col;
+    }
+
+    static Resources GetPlanetGeneration(Empire empire){
+        List<Planet> planets = GetPlanets(empire);
+        planets = FilterForColonizedPlanets(planets);
+
+        Resources ResourcesGained = new Resources();
+        for(int i = 0; i < planets.Count; i++){
+            ResourcesGained.Add(planets[i].GetResourceProduction());
+        }
+
+        return ResourcesGained;
+    }
+
+    public static Hex[] FilterHexes(int mode, Empire empire){
+        int index = GetEmpireNumber(empire);
+        if(mode == 0){
+            return FilterSpaceHex(index);
+        }else 
+        if(mode == 1){
+            return FilterSystemHex(index);
+        } else {
+            Debug.LogError("You have tried filtering for a tile not supported!");
+        }
+        return null;
+    }
+    static Hex[] FilterSpaceHex(int index){
+        List<Hex> list = new List<Hex>();
+        for(int i = 0; i < tilesOfEmpires[index].Count; i++){
+            if(tilesOfEmpires[index][i] is SpaceHex){
+                list.Add(tilesOfEmpires[index][i]);
+            }
+        }
+        Hex[] hexes = new Hex[list.Count];
+        for(int i = 0; i < hexes.Length; i++){
+            hexes[i] = list[i];
+        }
+        return hexes;
+    }
+    static Hex[] FilterSystemHex(int index){
+        List<Hex> list = new List<Hex>();
+        for(int i = 0; i < tilesOfEmpires[index].Count; i++){
+            if(tilesOfEmpires[index][i] is SystemHex){
+                list.Add(tilesOfEmpires[index][i]);
+            }
+        }
+        Hex[] hexes = new Hex[list.Count];
+        for(int i = 0; i < hexes.Length; i++){
+            hexes[i] = list[i];
+        }
+        return hexes;
+    }
+
+    public static Empire GetPlayerEmpire(){
+        return empires[0];
+    }
+
+    public static Empire GetEmpireOwningPlanet(Planet planet){
+        foreach(Empire empire in empires){
+            List<Planet> planets = GetPlanets(empire);
+
+            for(int i = 0; i < planets.Count; i++){
+                if(planets[i] == planet){
+                    return empire;
+                }
+            }
+        }
+        Debug.LogError("You requested the controlling empire of a planet that isnt colonized!");
+        return null;
+    }
+
+    public static void ResetShipMovementPoints(Empire empire){
+        List<Ship> ships = GetShipsOfEmpire(empire);
+        foreach(Ship ship in ships){
+            ship.ResetMovement();
+        }
+    }
+
+    public static List<Ship> GetShipsOfEmpire(Empire empire){
+        List<Ship> ships = new List<Ship>();
+
+        int index = GetEmpireNumber(empire);
+
+        for(int i = 0; i < unitsOfEmpires[index].Count; i++){
+            if(unitsOfEmpires[index][i] is Ship){
+                ships.Add((Ship)unitsOfEmpires[index][i]);
+            }
+        }
+        return ships;
     }
 }

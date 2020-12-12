@@ -177,11 +177,16 @@ public class SystemHex : Hex{
 
     public void AddColonizedPlanet(int index){
         planetsColonized[index] = true;
+        planets[index].Colonized = true;
     }
 
     public Planet GetPlanet(int index){
         index %= planets.Length;
         return planets[index];
+    }
+
+    public int GetNumberOfPlanets(){
+        return planets.Length;
     }
     
 }

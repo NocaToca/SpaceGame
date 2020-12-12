@@ -11,11 +11,15 @@ public class Ship : Unit{
     public string representingLetter;
 
     public int movementPoints = 2;
+    public int availableMovementPoints = 2;
 
     // public Ship(Empire empire, Hex hex){
     //     Super(empire);
     //     this.hex = hex;
     // }
+    public void ResetMovement(){
+        availableMovementPoints = movementPoints;
+    }
 
 
 }
@@ -29,6 +33,7 @@ public class ColonyShip : Ship{
         representingLetter = "C";
         movementPoints = 3;
         ShipPosition = pos;
+        availableMovementPoints = 3;
 
     }
 
