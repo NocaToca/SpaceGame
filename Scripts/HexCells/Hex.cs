@@ -4,61 +4,25 @@ using UnityEngine;
 [System.Serializable]
 public class Hex
 {
-    public string type; 
+    //The visual component of the hex
+    public HexObject referenceObject; 
 
-    public Empire ControllingEmpire;
-
-    public List<Ship> ShipsOnHex;
-
-    public HexUI info;
-
-    public HexObject referenceObject;
-
-
-    public Hex(){
-        ShipsOnHex = new List<Ship>();
-        info = new HexUI();
-    }
-
+    //While this doesn't do anything here, it's needed for certain hex types and it's much friendlier just to initialize all hexes even if it doesnt do anything
     public virtual void Initialize(){
         return;
     }
 
-    public virtual bool Interact(){
-        return false;
-    }
-
-    public virtual string GetType(){
-        return "";
-    }
-
-    public virtual void GiveOptions(){
-        return;
-    }
-
-    public virtual bool CheckForColonyShip(){
-        for(int i = 0; i < ShipsOnHex.Count; i++){
-            if(ShipsOnHex[i].name == "Colony Ship"){
-                return true;
-            }
-        }
-        return false;
-    }
-
+    //Using a seed and a settings struct, we reliably randomly create a random type of Hex
     public static Hex CreateNewHex(System.Random seed, HexSettings hexSettings){
 
-        //float percent = (seed.Next(0, 100))/100.0f;
         float percent = Random.Range(0.0f, 1.0f);
-        //Debug.Log(percent);
 
+        //This array is left like this for easier future implemtation of more types of hexes
         HexValues[] chances = new HexValues[2];
         chances[1] = hexSettings.SpaceHex;
         chances[0] = hexSettings.SystemHex;
 
-
-        //float prev = chances[0];
-
-        //I'm sorting the array from least to greatest
+        //I'm sorting the array from least to greatest in terms of their chance
         for(int i = 1; i < chances.Length; i++){
             if(chances[i].chance > chances[i-1].chance){
                 HexValues store = chances[i-1];
@@ -67,6 +31,7 @@ public class Hex
                 i = 1;
             }
         }
+        //As now we can just run through an if statement for each and break once we find the first one that is true
         int index = 0;
         for(int i = 1; i < chances.Length; i++){
             if(percent > chances[i].chance){
@@ -78,42 +43,22 @@ public class Hex
         Hex returningHex = new Hex();
 
         if(chances[index].type == "Space"){
-
             returningHex = new SpaceHex();
-
-        } else 
+        } else
         if(chances[index].type == "System"){
-            //Debug.Log("Test");
-
             returningHex = new SystemHex();
-
         }
-
-        returningHex.type = chances[index].type;
         return returningHex;
 
     }
-
-    
-
-    public virtual Color GetPlanetColor(int index){
-        return Color.black;//ColorFromPlanet(planets[index]);
-    }
-
-    public virtual string GetPlanetString(int index){
-        return "";//GetInfoOnPlanet(planets[index]);
-    }
-
-    public virtual int GetPlanetsLength(){
-        return 0;
-    }
-
 }
 [System.Serializable]
 public class SystemHex : Hex{
 
+    //The planet array; holds all the planet information of the hex
     public Planet[] planets;
 
+    //A bool array for whether each planet in the planet array is colonized
     bool[] planetsColonized;
 
     //public Color color = Color.white;
@@ -129,41 +74,7 @@ public class SystemHex : Hex{
         }
     }
 
-    public override bool Interact(){
-        
-        string info = GetInfo();
-        return true;
-
-    }
-
-    private string GetInfo(){
-        string info = (planets.Length == 1) ? "This system has " + planets.Length + " planet." : "This system has " + planets.Length + " planets.";
-        for(int i = 0; i < planets.Length; i++){
-            info = info + "\nPlanet " + (i+1) + " is " + planets[i].GetInfo();
-        }
-        info = info + "\n";
-        if(ControllingEmpire == null){
-            info = info + "There is no one controlling this tile";
-        } else {
-            info = info + "The " + ControllingEmpire.Name + " Empire controls this tile";
-        }
-
-        return info;
-    }
-
-    public override string GetType(){
-        return "System";
-    }
-
-    public override Color GetPlanetColor(int index){
-        return ColorFromPlanet(planets[index%planets.Length]);
-    }
-
-    public Color ColorFromPlanet(Planet planet){
-        return planet.GetColor();
-    }
-
-    public override string GetPlanetString(int index){
+    public string GetPlanetString(int index){
         return GetInfoOnPlanet(planets[index%planets.Length], index%planets.Length);
     }
 
@@ -171,7 +82,7 @@ public class SystemHex : Hex{
         return "Planet " + (index+1) + " is a " + planet.GetInfo();
     }
 
-    public override int GetPlanetsLength(){
+    public int GetPlanetsLength(){
         return planets.Length;
     }
 
@@ -193,27 +104,4 @@ public class SystemHex : Hex{
 [System.Serializable]
 public class SpaceHex : Hex{
 
-    public override bool Interact(){
-        string info = "Hex has nothing on it";
-        if(ControllingEmpire == null){
-            info = info + ". There is no one controlling this tile";
-        } else {
-            info = info + ". The " + ControllingEmpire.Name + " Empire controls this tile";
-        }
-        //Debug.Log(info);
-
-        return false;
-    }
-
-    public override string GetType(){
-        return "Space";
-    }
-
-    public override Color GetPlanetColor(int index){
-        return new Color(0, 0, 0, 0);
-    }
-
-    public override string GetPlanetString(int index){
-        return "There is nothing of interest on this hex";
-    }
 }

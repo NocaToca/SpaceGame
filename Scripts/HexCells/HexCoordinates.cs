@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 
+//The hex coordinate system is so we can store our x,y,z hex coordinates in an array
 [System.Serializable]
 public struct HexCoordinates {
 
@@ -15,6 +16,7 @@ public struct HexCoordinates {
 		this.z = z;
 	}
 
+    //Our function to determine if a struct equals a struct
     public override bool Equals(object obj){
         if(!(obj is HexCoordinates)){
             return false;
@@ -26,12 +28,11 @@ public struct HexCoordinates {
         return false;
     }
 
+    //A simple to string function to be able to print our hex coordinates
     public override string ToString () {
 		return ("(" +
 			x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ")");
 	}
-
-    
 }
 
 public struct Coords{

@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class GenerationSettings : MonoBehaviour
 {
+    //This class is basically the settings for our planet resource generation
+
     public float GoldCenterArctic = 5.0f;
     public float GoldRadArctic = 1.0f;
 
@@ -31,7 +33,7 @@ public class GenerationSettings : MonoBehaviour
     public float ProdCenterMolten = 8.0f;
     public float ProdRadMolten = 2.0f;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         ArcticPlanet.GoldCenter = GoldCenterArctic;
         ArcticPlanet.GoldRad = GoldRadArctic;

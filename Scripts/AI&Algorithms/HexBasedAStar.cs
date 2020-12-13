@@ -13,6 +13,8 @@ So, to do this, we're going to actually have to traverse a 3d coordinate system 
 However, we only want cubes that make sense (this part is a little tricky to explain)
 Basically, all the x y and z coordinates should add up to 0 for reasons I know but can't put into words. It's much much easier to look at a graph and see it yourself (Google hex grid coordinate system and look at the first result)
 
+But in short terms, think of how our hex grid looks as cubes stacked on top of each other. For it to make sense, you always need to go up one in one axis and down one in another 
+
 So Instead of having the typical 22 neighbors you'd normally have to move in any direction for the 3d plane we will only have 6
 This means we CAN do this by forcing things to be 2d, but then diagonal movements will be more costly which is the whole reason we made a hexagonal system
 We have to use the centers as a distinction point, or make it 3d. Since our board has no negative direction we have to do the latter as we have no way of telling if something is in the wrong direction otherwise

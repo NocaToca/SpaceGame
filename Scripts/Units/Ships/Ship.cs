@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Ship : Unit{
+    //Stats of the unit
     public float health;
     public float damage;
     
+    //Position of the unit in terms of our hex coordinates
     public HexCoordinates ShipPosition;
 
+    //The letter representing our unit
     public string representingLetter;
 
+    //How many movement points the ship has and how many are left this turn
     public int movementPoints = 2;
     public int availableMovementPoints = 2;
 
@@ -17,6 +21,8 @@ public class Ship : Unit{
     //     Super(empire);
     //     this.hex = hex;
     // }
+
+    //Every turn we would want to reset our available movement points
     public void ResetMovement(){
         availableMovementPoints = movementPoints;
     }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Empire
 {
-    
+    //The number represnting our empire as seen in the board class
     public int playerNumber;
 
     public string Name = "Noca";

@@ -4,22 +4,27 @@ using UnityEngine;
 
 public class Resources
 {
+    //The resource class is responsible for all functionality regarding our resources
     
+    //The resources we have
     public float Gold;
     public float Production;
 
+    //Various constructors; if a float isn't inputted it is assumed it's zero
     public Resources(){
-
         Gold = 0;
         Production = 0;
-
+    }
+    public Resources(float Gold){
+        this.Gold = Gold;
+        Production = 0.0f;
     }
     public Resources(float Gold, float Production){
         this.Gold = Gold;
         this.Production = Production;
-    
     }
 
+    //Setting the resource values
     public void SetGold(float Gold){
         this.Gold = Gold;
     }
@@ -27,12 +32,14 @@ public class Resources
         Production = prod;
     }
 
+    //Adds two resources together
     public Resources Add(Resources resource){
         this.Gold += resource.Gold;
         this.Production += resource.Production;
         return this;
     }
 
+    //Returns the string value of cooresponding resource (casted to int)
     public string GoldToString(){
         int gold = (int)Gold;
         return "" + gold;
