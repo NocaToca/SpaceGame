@@ -15,7 +15,11 @@ public class Planet
     List<Building> buildings = new List<Building>();
 
     //The building queue on this planet
-    public List<Building> Queue = new List<Building>();
+    public List<Building> BuildingQueue = new List<Building>();
+
+    public List<Building> availableBuildings;
+
+    public float percentTowardsPlanet = 0.5f;
 
     //The natural resources this planet starts with
     Resources NaturalResources;
@@ -24,7 +28,7 @@ public class Planet
     float productionAmount;
 
     public Planet(){
-
+        //SetAvailableBuildings();
     }
 
     //Returns the buildings on our planet
@@ -72,7 +76,7 @@ public class Planet
     public static Planet GeneratePlanet(){
         float percent = Random.Range(0.0f, 1.0f);
 
-        int typesOfPlanets = 3;
+        int typesOfPlanets = 4;
         float p = 1.0f;
         int index = -1;
         for(int i = 0; i < typesOfPlanets; i++){
@@ -94,6 +98,9 @@ public class Planet
         if(index == 2){
             //Debug.Log("3");
             returnPlanet = new MoltenPlanet();
+        } else
+        if(index == 3){
+            returnPlanet = new OceanPlanet();
         }
         returnPlanet.GenerateNaturalProduction();
         return returnPlanet;
@@ -112,26 +119,40 @@ public class Planet
 
     //Adds a building to queue
     public void AddToQueue(Building building){
-        Queue.Add(building);
+        BuildingQueue.Add(building);
+        SetAvailableBuildings();
     }
     //Removes a building from queue
     public void RemoveFromQueue(Building building){
-        Queue.Remove(building);
+        BuildingQueue.Remove(building);
+        SetAvailableBuildings();
+    }
+
+    public void RefreshAvailableBuildings(){
+        SetAvailableBuildings();
     }
 
     //Builds whatever is in queue. If there is nothing in queue no production is created, however left over production from previously built buildings can be used to create the next building in queue faster
     public void BuildQueue(){
         float production = GetResourceProduction().Production;
-        productionAmount += production;
-        if(Queue.Count != 0){
-            if(productionAmount == Queue[0].GetBuildingCost().Production){
+        productionAmount += production * percentTowardsPlanet;
+        if(BuildingQueue.Count != 0){
+            if(productionAmount == BuildingQueue[0].GetBuildingCost().Production){
                 productionAmount = 0;
+                buildings.Add(BuildingQueue[0]);
+                BuildingQueue.Remove(BuildingQueue[0]);
             } else
-            if (productionAmount > Queue[0].GetBuildingCost().Production){
-                productionAmount -= Queue[0].GetBuildingCost().Production;
+            if (productionAmount > BuildingQueue[0].GetBuildingCost().Production){
+                productionAmount -= BuildingQueue[0].GetBuildingCost().Production;
+                buildings.Add(BuildingQueue[0]);
+                BuildingQueue.Remove(BuildingQueue[0]);
             }
+            SetAvailableBuildings();
         } else {
             productionAmount = 0;
+        }
+        if(HasStarport()){
+            GetStarport().BuildQueue(production);
         }
     }
 
@@ -152,10 +173,63 @@ public class Planet
     }
 
     //Sets the natural resources of the planet
-    public void SetNaturalResources(float gold, float prod){
-        NaturalResources = new Resources(gold, prod);
+    public void SetNaturalResources(float gold, float prod, float science){
+        NaturalResources = new Resources(gold, prod, science);
         //NaturalResources.SetGold(gold);
         //NaturalResources.SetProduction(prod);
+    }
+
+    public void SetAvailableBuildings(){
+        if(Board.GetEmpireOwningPlanet(this) == null){
+            return;
+        }
+        availableBuildings = GameMode.GetBuildingsAvialableToEmpire(EmpireThatIsColonized);
+        List<string> names = new List<string>();
+        for(int i = 0; i < buildings.Count; i++){
+            names.Add(buildings[i].name);
+        }
+
+        for(int i = 0; i < BuildingQueue.Count; i++){
+            names.Add(BuildingQueue[i].name);
+        }
+
+        //Building Requirements
+        for(int i = 0; i < availableBuildings.Count; i++){
+            foreach(Building building in availableBuildings[i].buildRequirements){
+                if(!names.Contains(building.name)){
+                    availableBuildings.Remove(availableBuildings[i]);
+                    break;
+                }
+            }
+        }
+        
+        //Checking to see if we already have the buildings
+        for(int i = 0; i < availableBuildings.Count; i++){
+            if(names.Contains(availableBuildings[i].name)){
+                availableBuildings.Remove(availableBuildings[i]);
+            }
+        }
+
+        
+    }
+
+    public bool HasStarport(){
+        foreach(Building building in buildings){
+            if(building is Starport){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Starport GetStarport(){
+        foreach(Building building in buildings){
+            if(building is Starport){
+                return (Starport)building;
+            }
+        }
+        Debug.LogError("The planet detected a Starport but it seemingly vanished!");
+        return null;
     }
 }
 
@@ -170,6 +244,9 @@ public class ArcticPlanet : Planet{
 
     public static float ProdCenter;
     public static float ProdRad;
+    
+    public static float ScienceCenter;
+    public static float ScienceRad;
 
     public override string GetInfo(){
         string info = "an Artic Planet. ";
@@ -177,13 +254,14 @@ public class ArcticPlanet : Planet{
     }
 
     public override Color GetColor(){
-        return Color.blue;
+        return Color.cyan;
     }
 
     public override void GenerateNaturalProduction(){
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
-        SetNaturalResources(gold, prod);
+        float science = GetResourceFromVals(ScienceCenter, ScienceRad);
+        SetNaturalResources(gold, prod, science);
     }
 
 }
@@ -198,6 +276,9 @@ public class ContinetalPlanet : Planet{
 
     public static float ProdCenter;
     public static float ProdRad;
+    
+    public static float ScienceCenter;
+    public static float ScienceRad;
 
     public override string GetInfo(){
         string info =  "a Continetal Planet";
@@ -211,7 +292,8 @@ public class ContinetalPlanet : Planet{
     public override void GenerateNaturalProduction(){
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
-        SetNaturalResources(gold, prod);
+        float science = GetResourceFromVals(ScienceCenter, ScienceRad);
+        SetNaturalResources(gold, prod, science);
         
     }
 
@@ -228,6 +310,9 @@ public class MoltenPlanet : Planet{
     public static float ProdCenter;
     public static float ProdRad;
 
+    public static float ScienceCenter;
+    public static float ScienceRad;
+
     public override string GetInfo(){
         string info =  "a Molten Planet";
         return info + GetColonizedText();
@@ -240,8 +325,41 @@ public class MoltenPlanet : Planet{
     public override void GenerateNaturalProduction(){
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
-        SetNaturalResources(gold, prod);
+        float science = GetResourceFromVals(ScienceCenter, ScienceRad);
+        SetNaturalResources(gold, prod, science);
         
     }
 
+}
+
+public class OceanPlanet : Planet{
+    
+    public static float GoldCenter;
+    public static float GoldRad;
+
+    public static float FoodCenter;
+    public static float FoodRad;
+
+    public static float ProdCenter;
+    public static float ProdRad;
+    
+    public static float ScienceCenter;
+    public static float ScienceRad;
+
+    public override string GetInfo(){
+        string info =  "an Ocean Planet";
+        return info + GetColonizedText();
+    }
+
+    public override Color GetColor(){
+        return Color.blue;
+    }
+
+    public override void GenerateNaturalProduction(){
+        float gold = GetResourceFromVals(GoldCenter, GoldRad);
+        float prod = GetResourceFromVals(ProdCenter, ProdRad);
+        float science = GetResourceFromVals(ScienceCenter, ScienceRad);
+        SetNaturalResources(gold, prod, science);
+        
+    }
 }

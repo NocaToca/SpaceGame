@@ -9,6 +9,9 @@ public class Board : MonoBehaviour
     public static int width = 6;
     public static int height = 6;
 
+    public int SetWidth = 6;
+    public int SetHeight = 6;
+
     //When tiles are selected/want to be seen, use this color
     public static Color highlightColor = Color.magenta;
 
@@ -39,6 +42,8 @@ public class Board : MonoBehaviour
 /***************************************************************************Starting Functions**********************************************************************/
     //In the awake function, we want to get the cell generation component for use and set the width and height, along with instantiating the units list
     void Awake(){
+        width = SetWidth;
+        height = SetHeight;
         cellGen = GetComponentInChildren<HexCells>();
         cellGen.width = width;
         cellGen.height = height;
@@ -57,7 +62,9 @@ public class Board : MonoBehaviour
         }
 
         SpawnEmpires();
+        SpawnNomadUnits();
         GameMode.AddEmpireResource(new Resources());
+        GameMode.InitializeTechs(empires.Count);
 
     }
 
@@ -70,7 +77,7 @@ public class Board : MonoBehaviour
 
         //Spawning each empire and setting up their cooresponding lists
         for(int i = 0; i < empireCount; i++){
-            empires.Add(new Empire(new Color(1.0f, .647f, 0.0f), i));
+            empires.Add(new Empire((new Color(1.0f, .67f, 0.0f)), i));
             List<Hex> empHex = new List<Hex>();
             tilesOfEmpires.Add(empHex);
             List<Unit> empUnit = new List<Unit>();
@@ -112,6 +119,20 @@ public class Board : MonoBehaviour
 
         cellGen.makeCells();
 
+    }
+
+    private void SpawnNomadUnits(){
+        List<SpaceHex> spacehexes = new List<SpaceHex>();
+        foreach(HexObject hex in hexes){
+            if(hex.hex is SpaceHex){
+                spacehexes.Add((SpaceHex)hex.hex);
+            }
+        }
+        int numberOfNomadUnits = Random.Range(0, 5);
+        for(int i = 0; i < numberOfNomadUnits; i++){
+            int index = Random.Range(0, spacehexes.Count);
+            units.Add(new SpaceAmoeba(GetHexPosition(spacehexes[index])));
+        }
     }
 
 /************************************************************************Hex Functions*************************************************************************/
@@ -219,6 +240,20 @@ public Hex GetHexNearestToPos(Vector3 pos){
             hexes[i] = list[i];
         }
         return hexes;
+    }
+
+    public static List<Hex> GetHexesOnScreen(){
+        List<Hex> hexesOnScreen = new List<Hex>();
+        
+        foreach(HexObject hex in hexes){
+            Vector3 screenPoint = Camera.main.WorldToViewportPoint(hex.transform.position);
+            bool onScreen = screenPoint.z > 0 && screenPoint.x > 0 && screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
+            if(onScreen){
+                hexesOnScreen.Add(hex.hex);
+            }
+        }
+
+        return hexesOnScreen;
     }
 
     /******************************************************************Functions Regarding Units*******************************************************/
@@ -332,7 +367,13 @@ public Hex GetHexNearestToPos(Vector3 pos){
 
     //Reseting the ship movement points of each empire as they end their turns
     public static void ResetShipMovementPoints(Empire empire){
-        List<Ship> ships = GetShipsOfEmpire(empire);
+        List<Ship> ships;
+        if(empire != null){
+            ships = GetShipsOfEmpire(empire);
+            
+        } else {
+            ships = GetNomadShips();
+        }
         foreach(Ship ship in ships){
             ship.ResetMovement();
         }
@@ -350,6 +391,142 @@ public Hex GetHexNearestToPos(Vector3 pos){
             }
         }
         return ships;
+    }
+
+    public static List<Ship> GetNomadShips(){
+        List<Ship> ships = new List<Ship>();
+        foreach(Unit unit in units){
+            if(unit is Ship){
+                Ship ship = (Ship)unit;
+                Empire empire = GetShipEmpire(ship);
+                if(empire == null){
+                    ships.Add(ship);
+                }
+            }
+        }
+        return ships;
+    }
+
+    //Returns the amount of resources the empire unit's uses in one turn
+    public static Resources GetUnitGeneration(Empire empire){
+        int index = GetEmpireNumber(empire);
+        Resources sum = new Resources();
+        foreach(Unit unit in unitsOfEmpires[index]){
+            sum.Add(unit.maintenance);
+        }
+        return sum;
+    }
+
+    public static void Build(Hex hex, int index, Ship ship){
+        Planet planet = GetPlanet(hex, index);
+        ship.ShipPosition = GetHexPosition(hex);
+        ship.OwningEmpire = GetEmpireOwningPlanet(planet);
+        planet.GetStarport().AddToQueue(ship);
+        CanvasController.Clear();
+    }
+
+    public static void AddShip(Ship ship, Empire empire){
+        int index = GetEmpireNumber(empire);
+        unitsOfEmpires[index].Add(ship);
+        units.Add(ship);
+    }
+
+    public static List<Ship> GetAllShips(){
+        List<Ship> ships = new List<Ship>();
+        foreach(List<Unit> shipList in unitsOfEmpires){
+            foreach(Unit unit in shipList){
+                if(unit is Ship){
+                    Ship ship = (Ship)unit;
+                    ships.Add(ship);
+                }
+            }
+        }
+        return ships;
+    }
+
+    public static void MoveNomadShips(){
+        foreach(Unit unit in units){
+            if(unit is Ship){
+                Ship ship = (Ship)unit;
+                if(GetShipEmpire(ship) == null){
+                    AI.MoveShip(ship);
+                }
+            }
+        }
+    }
+
+    public static void Fight(){
+        Ship[] ships = GetShipsOnPosition(GetHexPosition(MainController.displayingHex));
+        List<Ship> sideOne = new List<Ship>();
+        List<Ship> sideTwo = new List<Ship>();
+        sideOne.Add(ships[0]);
+        for(int i = 1; i < ships.Length; i++){
+            if(GetShipEmpire(ships[i]) == GetShipEmpire(sideOne[0])){
+                sideOne.Add(ships[i]);
+            } else {
+                sideTwo.Add(ships[i]);
+            }
+        }
+
+        foreach(Ship attackingShip in sideOne){
+            foreach(Ship defendingShip in sideTwo){
+                defendingShip.health -= attackingShip.damage;
+                if(defendingShip.health <= 0){
+                    DestroyShip(defendingShip);
+                }
+            }
+        }
+        foreach(Ship attackingShip in sideTwo){
+            foreach(Ship defendingShip in sideOne){
+                defendingShip.health -= attackingShip.damage;
+                if(defendingShip.health <= 0){
+                    DestroyShip(defendingShip);
+                }
+            }
+        }
+        MainController.RequestHexRecall();
+    }
+    public static void Fight(Hex hex){
+        Ship[] ships = GetShipsOnPosition(GetHexPosition(hex));
+        List<Ship> sideOne = new List<Ship>();
+        List<Ship> sideTwo = new List<Ship>();
+        sideOne.Add(ships[0]);
+        for(int i = 1; i < ships.Length; i++){
+            if(GetShipEmpire(ships[i]) == GetShipEmpire(sideOne[0])){
+                sideOne.Add(ships[i]);
+            } else {
+                sideTwo.Add(ships[i]);
+            }
+        }
+
+        foreach(Ship attackingShip in sideOne){
+            foreach(Ship defendingShip in sideTwo){
+                defendingShip.health -= attackingShip.damage;
+                if(defendingShip.health <= 0){
+                    DestroyShip(defendingShip);
+                }
+            }
+        }
+        foreach(Ship attackingShip in sideTwo){
+            foreach(Ship defendingShip in sideOne){
+                defendingShip.health -= attackingShip.damage;
+                if(defendingShip.health <= 0){
+                    DestroyShip(defendingShip);
+                }
+            }
+        }
+
+    }
+
+    public static bool DoesHexHaveOpposingFleets(Hex hex){
+        Ship[] ships = ShipsOnHex(hex);
+        Empire empire = GetShipEmpire(ships[0]);
+        foreach(Ship ship in ships){
+            if(GetShipEmpire(ship) != empire){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**********************************************************************************Planet Functions*******************************************************/
@@ -423,6 +600,13 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return ResourcesGained;
     }
 
+    public static void Build(Hex hex, int index, Building building){
+        Planet planet = GetPlanet(hex, index);
+        building.pos = GetHexPosition(hex);
+        planet.AddToQueue(building);
+        CanvasController.Clear();
+    }
+
 /************************************************************************************Empire functions****************************************************************/
 //Most of the logic surrounding empires is done in the GameMode class, but the board class has all of the information regarding the empire's doings and control
 
@@ -486,7 +670,9 @@ public Hex GetHexNearestToPos(Vector3 pos){
 
     //Returns the resources outputted by the empire. Currently only considers planet generation (ship upkeep is definitely going to be implemented)
     public static Resources GetEmpiresGeneration(Empire empire){
-        return GetPlanetGeneration(empire);
+        Resources planetGen = GetPlanetGeneration(empire);
+        planetGen.Add(GetUnitGeneration(empire));
+        return planetGen;
     }
 
     //Returns the empire of the player. For multiplayer implementation this should return the empire of the client but that implementation is far out. For now, the player is always going to be the first empire
@@ -505,7 +691,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
                 }
             }
         }
-        Debug.LogError("You requested the controlling empire of a planet that isnt colonized!");
+        //Debug.LogError("You requested the controlling empire of a planet that isnt colonized!");
         return null;
     }
 

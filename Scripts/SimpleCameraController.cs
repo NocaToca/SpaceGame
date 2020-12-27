@@ -31,7 +31,8 @@ namespace UnityTemplateProjects
 
             public void Translate(Vector3 translation)
             {
-                Vector3 rotatedTranslation = Quaternion.Euler(pitch, yaw, roll) * translation;
+                //Vector3 rotatedTranslation = Quaternion.Euler(pitch, yaw, roll) * translation;
+                Vector3 rotatedTranslation = translation;
 
                 x += rotatedTranslation.x;
                 y += rotatedTranslation.y;
@@ -84,14 +85,16 @@ namespace UnityTemplateProjects
 
         Vector3 GetInputTranslationDirection()
         {
+            float angle;
             Vector3 direction = new Vector3();
+            //Vector3 pos = new Vector3(x,y,z);
             if (Input.GetKey(KeyCode.W))
             {
-                direction += Vector3.forward;
+                //direction += Vector3.forward;
             }
             if (Input.GetKey(KeyCode.S))
             {
-                direction += Vector3.back;
+                //direction += Vector3.back;
             }
             if (Input.GetKey(KeyCode.A))
             {
@@ -101,13 +104,19 @@ namespace UnityTemplateProjects
             {
                 direction += Vector3.right;
             }
-            if (Input.GetKey(KeyCode.Q))
+            if (Input.GetKey(KeyCode.W))
             {
-                direction += Vector3.down;
+                
+                direction += Vector3.forward;
+                //direction = Vector3.Project(direction, Vector3.back * 5.0f);
+                //direction += Vector3.forward;
             }
-            if (Input.GetKey(KeyCode.E))
+            if (Input.GetKey(KeyCode.S))
             {
-                direction += Vector3.up;
+                direction += Vector3.back;
+                //direction = Vector3.Project(direction, new Vector3(-5, 0, 0));
+
+                //direction += Vector3.back;
             }
             return direction;
         }
@@ -127,31 +136,35 @@ namespace UnityTemplateProjects
 				#endif
             }
             // Hide and lock cursor when right mouse button pressed
-            if (Input.GetMouseButtonDown(1))
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
+            // if (Input.GetMouseButtonDown(1))
+            // {
+            //     Cursor.lockState = CursorLockMode.Locked;
+            // }
 
-            // Unlock and show cursor when right mouse button released
-            if (Input.GetMouseButtonUp(1))
-            {
-                Cursor.visible = true;
-                Cursor.lockState = CursorLockMode.None;
-            }
+            // // Unlock and show cursor when right mouse button released
+            // if (Input.GetMouseButtonUp(1))
+            // {
+            //     Cursor.visible = true;
+            //     Cursor.lockState = CursorLockMode.None;
+            // }
 
-            // Rotation
-            if (Input.GetMouseButton(1))
-            {
-                var mouseMovement = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y") * (invertY ? 1 : -1));
+            // // Rotation
+            // if (Input.GetMouseButton(1))
+            // {
+            //     var mouseMovement = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y") * (invertY ? 1 : -1));
                 
-                var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
+            //     var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
 
-                m_TargetCameraState.yaw += mouseMovement.x * mouseSensitivityFactor;
-                m_TargetCameraState.pitch += mouseMovement.y * mouseSensitivityFactor;
-            }
+            //     m_TargetCameraState.yaw += mouseMovement.x * mouseSensitivityFactor;
+            //     m_TargetCameraState.pitch += mouseMovement.y * mouseSensitivityFactor;
+            // }
             
             // Translation
             translation = GetInputTranslationDirection() * Time.deltaTime;
+            if(translation == Vector3.zero){
+                return;
+            }
+            //translation.y = 0;
 
             // Speed up movement when shift key held
             if (Input.GetKey(KeyCode.LeftShift))

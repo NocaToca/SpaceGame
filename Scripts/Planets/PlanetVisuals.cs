@@ -15,7 +15,13 @@ public class PlanetVisuals : MonoBehaviour
             return Color.green;
         }
         if(planet is ArcticPlanet){
+            return Color.cyan;
+        }
+        if(planet is OceanPlanet){
             return Color.blue;
+        }
+        if(planet != null){
+            Debug.LogError("You have not set up this planet's visuals yet!");
         }
         return new Color(0,0,0,0);
     }

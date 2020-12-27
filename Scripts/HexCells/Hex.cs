@@ -88,7 +88,7 @@ public class SystemHex : Hex{
 
     public void AddColonizedPlanet(int index){
         planetsColonized[index] = true;
-        planets[index].Colonized = true;
+        planets[index%planets.Length].Colonized = true;
     }
 
     public Planet GetPlanet(int index){

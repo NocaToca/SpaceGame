@@ -37,6 +37,7 @@ public class MainController : MonoBehaviour
         GetBoard();
         GetCanvasController();
         prevPlanetIndex = 0;
+        
     }
 
     //Getting the board in the scene
@@ -73,6 +74,7 @@ public class MainController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        canvasController.ShowUnitTextOnCanvas();
         //Here, we want to make sure the board isnt null before doing what we wish
         if(board != null){
             //If we want to move a ship, our next click will determine where our ship moves
@@ -103,8 +105,8 @@ public class MainController : MonoBehaviour
             if (Input.GetMouseButton(0) && InteractionsEnabled) {
 
                 //Debug.Log("bee");
-                if(prevPlanetIndex != canvasController.currentPlanetDisplayed){
-                    prevPlanetIndex = canvasController.currentPlanetDisplayed;
+                if(prevPlanetIndex != CanvasController.currentPlanetDisplayed){
+                    prevPlanetIndex = CanvasController.currentPlanetDisplayed;
                     return;
                 }
 
@@ -160,7 +162,7 @@ public class MainController : MonoBehaviour
 
     //If we touched a cell, this is the function that is called. As of right now, we just want to display the hex we clicked
     public void TouchCell (RaycastHit hit) {
-        canvasController.currentPlanetDisplayed = 0;
+        CanvasController.currentPlanetDisplayed = 0;
         Vector3 pos = hit.collider.gameObject.transform.position;
         
         
@@ -219,5 +221,11 @@ public class MainController : MonoBehaviour
     }
     public static void EnableInteractions(){
         InteractionsEnabled = true;
+    }
+
+    public static void ClearCanvasController(){
+        canvasController.GetRidOfHexInfo();
+        canvasController.DisableBuildMenu();
+        EnableInteractions();
     }
 }

@@ -18,16 +18,25 @@ public class CanvasController : MonoBehaviour
     public GameObject HexInfo;
 
     //The current planet index we are displaying (can be greater than the length of planets in a system but not lower than 0)
-    public int currentPlanetDisplayed;
+    public static int currentPlanetDisplayed;
 
     //The current unit index we are displaying (can be greater than the length of units in a system but not lower than 0)
-    public int currentUnitDisplayed;
+    public static int currentUnitDisplayed;
 
     //Whether or not the canvas was interacted with
     public static bool wasInteractedWith = false;
 
     //Our base button prefab for our button scrollable lists
     public Button buttonPrefab;
+
+    public static bool BuildMenuDisplaying = false;
+
+    static List<Text> textList = new List<Text>();
+    public Text unitTextBase;
+
+    public bool hideText = false;
+
+    public bool shipListDisplayed = false;
     
 /********************************************************************Button Call Functions************************************************************/
     //These functions are called by our buttons on our UI
@@ -80,14 +89,80 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject3 = gameObject2.transform.GetChild(0).gameObject;
 
         List<Button> buttons = new List<Button>();
-        int Length = 10;
+        
+        List<Building> availableBuildings = Board.GetPlanet(MainController.displayingHex, currentPlanetDisplayed).availableBuildings;
+        List<Unit> availableUnits = GameMode.GetUnitsAvailableToEmpire(Board.GetPlayerEmpire());
+
+        if(availableBuildings == null){
+            Board.GetPlanet(MainController.displayingHex, currentPlanetDisplayed).RefreshAvailableBuildings();
+            availableBuildings = Board.GetPlanet(MainController.displayingHex, currentPlanetDisplayed).availableBuildings;
+        }
+
+        //Ships can only be built if the planet has a starport, so we need to make sure it does!
+        if(!Board.GetPlanet(MainController.displayingHex, currentPlanetDisplayed).HasStarport()){
+            availableUnits = Unit.ClearShipsFromList(availableUnits);
+        }
+
+        int Length = availableBuildings.Count;
+        Length += availableUnits.Count;
         for(int i = 0; i < Length; i++){
             buttons.Add(Instantiate(buttonPrefab));
             buttons[i].transform.SetParent(gameObject3.transform);
             buttons[i].gameObject.SetActive(true);
+            GameObject gameObject4 = buttons[i].gameObject;
+            Text text = gameObject4.GetComponentInChildren<Text>();
+            if(i < availableBuildings.Count){
+                text.text = availableBuildings[i].name;
+                buttons[i].onClick.AddListener(availableBuildings[i].Build);
+            } else {
+                text.text = availableUnits[i - availableBuildings.Count].name;
+                buttons[i].onClick.AddListener(availableUnits[i - availableBuildings.Count].Build);
+            }
         }
         Image image = gameObject3.GetComponent<Image>();
         image.rectTransform.sizeDelta = new Vector2(80, Length * 20);
+        Vector2 pos = image.rectTransform.anchoredPosition;
+        pos.y += Length * 10;
+        image.rectTransform.anchoredPosition = pos;
+    }
+
+    public void GenerateTechButtons(){
+        GameObject gameObject1 = this.transform.GetChild(3).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(0).gameObject;
+        GameObject gameObject3 = gameObject2.transform.GetChild(0).gameObject;
+
+        List<Button> buttons = new List<Button>();
+
+        List<Tech> techs = GameMode.GetTechsAvailableToEmpire(Board.GetPlayerEmpire());
+
+        int Length = techs.Count;
+
+        for(int i = 0; i < Length; i++){
+            buttons.Add(Instantiate(buttonPrefab));
+            buttons[i].transform.SetParent(gameObject3.transform);
+            buttons[i].gameObject.SetActive(true);
+            GameObject gameObject4 = buttons[i].gameObject;
+            Text text = gameObject4.GetComponentInChildren<Text>();
+            if(i < techs.Count){
+                text.text = techs[i].name;
+                buttons[i].onClick.AddListener(techs[i].AddToQueue);
+            }
+        }
+        
+        Image image = gameObject3.GetComponent<Image>();
+        image.rectTransform.sizeDelta = new Vector2(80, Length * 20);
+    }
+
+    public void DestroyBuildingButtons(){
+        GameObject gameObject1 = this.transform.GetChild(3).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(0).gameObject;
+        GameObject gameObject3 = gameObject2.transform.GetChild(0).gameObject;
+
+        Transform[] children = gameObject3.GetComponentsInChildren<Transform>();
+
+        for(int i = 1; i < children.Length; i++){
+            GameObject.Destroy(children[i].gameObject, 0.0f);
+        }
     }
     
 /***************************************************************Initial Display Functions****************************************************/
@@ -143,6 +218,7 @@ public class CanvasController : MonoBehaviour
         b = Board.ShipsOnHex(hex).Length != 0;
         DisableOrEnableUnitRightButton(hex, b);
         DisableOrEnableUnitLeftButton(hex, b);
+        DisableOrEnableFightButton(hex);
     }
 
     //Shows the hex coordinates (x,y,z) of the hex
@@ -251,7 +327,7 @@ public class CanvasController : MonoBehaviour
         GameObject gameObject4 = gameObject2.transform.GetChild(6).gameObject;
 
         if(hex is SystemHex){
-            Resources planetResources = Board.GetPlanet(hex, currentPlanetDisplayed).GetNaturalResources();
+            Resources planetResources = Board.GetPlanet(hex, currentPlanetDisplayed).GetResourceProduction();
             
             gameObject3.SetActive(true);
             gameObject4.SetActive(true);
@@ -302,6 +378,7 @@ public class CanvasController : MonoBehaviour
     private void UpdateResourceDisplay(){
         UpdateGold();
         UpdateProd();
+        UpdateScience();
     }
 
     private void UpdateGold(){
@@ -324,6 +401,18 @@ public class CanvasController : MonoBehaviour
         Resources empireRes = GameMode.GetPlayerResources();
 
         text.text = "Prod: " + empireRes.ProdToString();
+    }
+
+    private void UpdateScience(){
+        
+        GameObject gameObject1 = this.transform.GetChild(2).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(2).gameObject;
+
+        Text text = gameObject2.GetComponent<Text>();
+
+        Resources empireRes = GameMode.GetPlayerResources();
+        
+        text.text = "Science: " + empireRes.ScienceToString();
     }
 
 /***************************************************************************Unit Display*****************************************************************************/
@@ -368,30 +457,74 @@ public class CanvasController : MonoBehaviour
         }
     }
 
+    public void ShowUnitTextOnCanvas(){
+        //List<Ship> allShips = Board.GetAllShips();
+        foreach(Text text in textList){
+            GameObject.Destroy(text.gameObject);
+        }
+        textList.Clear();
+        if(!hideText){
+            List<Hex> hexes = Board.GetHexesOnScreen();
+            foreach(Hex hex in hexes){
+                AddUnitTextAboveHex(hex);
+            }
+        }
+    }
+    private void AddUnitTextAboveHex(Hex hex){
+        Ship[] ships = Board.ShipsOnHex(hex);
+        if(ships.Length >= 1){
+            GameObject parentObject = this.transform.GetChild(4).gameObject;
+        
+            Text newText = GameObject.Instantiate(unitTextBase);
+            newText.transform.SetParent(parentObject.transform);
+
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(hex.referenceObject.transform.position);
+
+            newText.rectTransform.position = new Vector3(screenPos.x, screenPos.y, screenPos.z);
+
+            textList.Add(newText);
+            newText.text = (ships.Length > 1) ? ships.Length + " Ships": ships[0].name;
+        }
+    }
+
+
 /************************************************************************Displaying Menus/Buttons************************************************************/
     //Displays the whole info tab
     public void DisplayHexInfo(){
         HexInfo.SetActive(true);
         HexInfoDisplayed = true;
+        hideText = true;
     }
 
     //Gets rid of the whole info tab
     public void GetRidOfHexInfo(){
         HexInfo.SetActive(false);
         HexInfoDisplayed = false;
+        hideText = false;
         DisableBuildMenu();
     }
 
     //Enables the build menu (list of items you can build on a planet)
-    private void EnableBuildMenu(){
+    public void EnableBuildMenu(){
         GameObject gameObject1 = this.transform.GetChild(3).gameObject;
         gameObject1.SetActive(true);
+        BuildMenuDisplaying = true;
+        GenerateBuildingButtons();
+    }
+
+    public void EnableTechMenu(){
+        GameObject gameObject1 = this.transform.GetChild(3).gameObject;
+        gameObject1.SetActive(true);
+        BuildMenuDisplaying = true;
+        GenerateTechButtons();
     }
 
     //Disables the build menu
-    private void DisableBuildMenu(){
+    public void DisableBuildMenu(){
         GameObject gameObject1 = this.transform.GetChild(3).gameObject;
         gameObject1.SetActive(false);
+        BuildMenuDisplaying = false;
+        DestroyBuildingButtons();
     }
 
     //As the enabling or disabling a button off of a boolean
@@ -424,6 +557,29 @@ public class CanvasController : MonoBehaviour
         gameObject3.SetActive(b);
     }
 
+    private void DisableOrEnableFightButton(Hex hex){
+        GameObject gameObject1 = this.transform.GetChild(0).gameObject;
+        GameObject gameObject2 = gameObject1.transform.GetChild(2).gameObject;
+        GameObject gameObject3 = gameObject2.transform.GetChild(5).gameObject;
+
+        Button button = gameObject3.GetComponent<Button>();
+
+        Ship[] ships = Board.ShipsOnHex(hex);
+        if(ships.Length == 0){
+            button.interactable = false;
+            return;
+        }
+        Empire empire = Board.GetShipEmpire(ships[0]);
+        foreach(Ship ship in ships){
+            if(Board.GetShipEmpire(ship) != empire){
+                
+                button.interactable = true;
+                return;
+            }
+        }
+        button.interactable = false;
+    }
+
     //Updates the move button to see if a ship can or cannot move, or if there even is a ship on the tile
     private void UpdateMoveButton(Hex hex){
         GameObject gameObject1 = this.transform.GetChild(0).gameObject;
@@ -438,7 +594,7 @@ public class CanvasController : MonoBehaviour
 
         if(ships.Length >= 1){
             
-            if(ships[currentUnitDisplayed%ships.Length].availableMovementPoints == 0){
+            if(ships[currentUnitDisplayed%ships.Length].availableMovementPoints == 0 || Board.GetShipEmpire(ships[currentUnitDisplayed%ships.Length]) != Board.GetPlayerEmpire()){
                 button.interactable = false;
             } else {
                 button.interactable = true;
@@ -451,11 +607,7 @@ public class CanvasController : MonoBehaviour
     void Start(){
         currentPlanetDisplayed = 0;
         currentUnitDisplayed = 0;
-        GenerateBuildingButtons();
     }
-
-    
-
     public static bool checkWasInteracted(){
         if(wasInteractedWith){
             wasInteractedWith = false;
@@ -464,10 +616,10 @@ public class CanvasController : MonoBehaviour
             return false;
         }
     }
+    public static void Clear(){
+        MainController.ClearCanvasController();
 
-    
-
-    
+    }
 
     /*********************************************************************Interacting With Ships**********************************************************************************/
     public void MoveShip(){
@@ -487,7 +639,23 @@ public class CanvasController : MonoBehaviour
     }
 
     public void BuildOnPlanet(){
+        if(!BuildMenuDisplaying){
+            EnableBuildMenu();
+        } else {
+            DisableBuildMenu();
+        }
+    }
 
+    public void ShowAvailableTechs(){
+        if(!BuildMenuDisplaying){
+            EnableTechMenu();
+        } else {
+            DisableBuildMenu();
+        }
+    }
+
+    public void Fight(){
+        Board.Fight();
     }
 
 }

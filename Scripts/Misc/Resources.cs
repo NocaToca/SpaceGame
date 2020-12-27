@@ -9,6 +9,7 @@ public class Resources
     //The resources we have
     public float Gold;
     public float Production;
+    public float Science;
 
     //Various constructors; if a float isn't inputted it is assumed it's zero
     public Resources(){
@@ -18,10 +19,17 @@ public class Resources
     public Resources(float Gold){
         this.Gold = Gold;
         Production = 0.0f;
+        Science = 0.0f;
     }
     public Resources(float Gold, float Production){
         this.Gold = Gold;
         this.Production = Production;
+        Science = 0.0f;
+    }
+    public Resources(float Gold, float Production, float Science){
+        this.Gold = Gold;
+        this.Production = Production;
+        this.Science = Science;
     }
 
     //Setting the resource values
@@ -31,11 +39,15 @@ public class Resources
     public void SetProduction(float prod){
         Production = prod;
     }
+    public void SetScience(float Science){
+        this.Science = Science;
+    }
 
     //Adds two resources together
     public Resources Add(Resources resource){
         this.Gold += resource.Gold;
         this.Production += resource.Production;
+        this.Science += resource.Science;
         return this;
     }
 
@@ -47,6 +59,10 @@ public class Resources
     public string ProdToString(){
         int prod = (int)Production;
         return "" + prod;
+    }
+    public string ScienceToString(){
+        int science = (int)Science;
+        return "" + science;
     }
 
 }
