@@ -2,33 +2,42 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//The class dealing with all of our technologies
 public class Tech{
     List<Tech> prereq = new List<Tech>();
 
+    //how much sciene is required for the tech
     public float science;
+
+    //The name of the tech
     public string name;
 
+    //Initializing the techs
     public Tech(string name, float science, List<Tech> prereq){
         this.name = name;
         this.science = science;
         this.prereq = prereq;
     }
 
+    //Adds a tech to queue
     public void AddToQueue(){
         GameMode.AddToTechQueue(this, Board.GetPlayerEmpire());
         CanvasController.Clear();
     }
 
+    //Our revolutionary Space flight tech
     public static Tech GetRSF(){
         return new Tech("Revolutionized Space Flight", 10.0f, new List<Tech>());
     }
 
+    //Our ship yard tech
     public static Tech GetShipyards(){
         List<Tech> prereq = new List<Tech>();
         prereq.Add(GetRSF());
         return new Tech("Shipyards", 15.0f, prereq);
     }
 
+    //Returns all of the techs in the game
     public static List<Tech> GetAllTechs(){
         List<Tech> techs = new List<Tech>();
 
@@ -42,6 +51,7 @@ public class Tech{
         return techs;
     }
 
+    //Filters the available techs based off a list of acquired techs
     public static List<Tech> FilterTechs(List<Tech> acquiredTechs){
         List<Tech> alltTechs = GetAllTechs();
         List<string> names = new List<string>();

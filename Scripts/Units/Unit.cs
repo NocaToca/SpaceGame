@@ -12,13 +12,14 @@ public class Unit{
 
     public string name;
 
-    public Resources cost;
-    public Resources maintenance;
+    public Resource cost;
+    public Resource maintenance;
 
     // public Unit(Empire empire){
     //     OwningEmpire = empire;
     // }
 
+    //Gets all available units
     public static List<Unit> GetAllUnits(){
         List<Unit> units = new List<Unit>();
         units.Add(new ColonyShip());
@@ -31,6 +32,7 @@ public class Unit{
 
     }
 
+    //Clears ships from the list of units
     public static List<Unit> ClearShipsFromList(List<Unit> units){
         List<Unit> filteredUnits = new List<Unit>();
         foreach(Unit unit in units){
@@ -41,7 +43,7 @@ public class Unit{
         return filteredUnits;
     }
 
-    public Resources GetCost(){
+    public Resource GetCost(){
         return cost;
     }
 

@@ -32,8 +32,8 @@ public class Ship : Unit{
 
 public class ColonyShip : Ship{
 
-    static readonly Resources productionCost = new Resources(10.0f, 15.0f);
-    static readonly Resources Upkeep = new Resources(0.5f);
+    static readonly Resource productionCost = new Resource(10.0f, 15.0f);
+    static readonly Resource Upkeep = new Resource(0.5f);
 
     public ColonyShip(){
         name = "Colony Ship";
@@ -75,8 +75,8 @@ public class ColonyShip : Ship{
 
 public class ProtectorShip : Ship{
 
-    static readonly Resources Upkeep = new Resources(0.75f);
-    static readonly Resources productionCost = new Resources(7.5f, 10.0f);
+    static readonly Resource Upkeep = new Resource(0.75f);
+    static readonly Resource productionCost = new Resource(7.5f, 10.0f);
 
     public ProtectorShip(){
         Type = true;
@@ -110,8 +110,8 @@ public class ProtectorShip : Ship{
 }
 
 public class AssualtShip : Ship{
-    static readonly Resources Upkeep = new Resources(0.75f);
-    static readonly Resources productionCost = new Resources(7.5f, 12.0f);
+    static readonly Resource Upkeep = new Resource(0.75f);
+    static readonly Resource productionCost = new Resource(7.5f, 12.0f);
 
     public AssualtShip(){
         Type = true;
@@ -154,5 +154,6 @@ public class SpaceAmoeba : Ship{
         health = 150.0f;
         damage = 50.0f;
     }
+    //No build function because only the AI can build it, so it has to be placed
 }
 
