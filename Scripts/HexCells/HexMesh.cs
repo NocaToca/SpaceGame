@@ -5,6 +5,8 @@ using System.Collections.Generic;
 The hex mesh class here is responsible for constructing the mesh of the hex
 
 I didnt make this class myself since I have a bad understanding of making meshes with verticies that arent squares, but I know we basically just create 6 traingles for the mesh
+
+Thank you CatLike Coding!
 */
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class HexMesh : MonoBehaviour {
@@ -58,8 +60,8 @@ public class HexMesh : MonoBehaviour {
         for (int i = 0; i < 6; i++) {
             AddTriangle(
                 zero,
-                zero + Utilities.corners[i],
-                zero + Utilities.corners[i+1]
+                zero + HexUtilities.corners[i],
+                zero + HexUtilities.corners[i+1]
             );
 			AddTriangleColor(HexVisuals.GetColor(cell.hex));
         }

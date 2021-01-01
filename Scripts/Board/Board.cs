@@ -39,33 +39,69 @@ public class Board : MonoBehaviour
     //This list of units in play during the game
     public static List<Unit> units;
 
+    public SystemStorage systemStorage;
+
+    public Material Atmosphere;
+	public Material Planet;
+	public Material Clouds;
+
+    public static bool initialized = false;
+
+
 /***************************************************************************Starting Functions**********************************************************************/
     //In the awake function, we want to get the cell generation component for use and set the width and height, along with instantiating the units list
     void Awake(){
-        width = SetWidth;
-        height = SetHeight;
-        cellGen = GetComponentInChildren<HexCells>();
-        cellGen.width = width;
-        cellGen.height = height;
-        units = new List<Unit>();
+        if(!initialized){
+            width = SetWidth;
+            height = SetHeight;
+            cellGen = GetComponentInChildren<HexCells>();
+            cellGen.width = width;
+            cellGen.height = height;
+            cellGen.Initialize();
+            units = new List<Unit>();
+            CubeSphere.Atmosphere = Atmosphere;
+            CubeSphere.Planet = Planet;
+            CubeSphere.Clouds = Clouds;
+        } else {
+            
+        }
+        
     }
 
     // Start is called before the first frame update
-    //We obtain the hex array and initialize each hex here, along with initializing the empire resources after spawning them
+    //We obtain the hex array and initialize each hex here, along with initializing the empire Resource after spawning them
+    //If we already initialized the board, we dont want to initialize it again! So we just generate what we had previously
     void Start(){
-
-        hexes = cellGen.GetHexes();
-        for(int y = 0; y < hexes.GetLength(0); y++){
-            for(int x = 0; x < hexes.GetLength(1); x++){
-                hexes[y,x].hex.Initialize();
+        if(!initialized){
+            hexes = cellGen.GetHexes();
+            for(int y = 0; y < hexes.GetLength(0); y++){
+                for(int x = 0; x < hexes.GetLength(1); x++){
+                    hexes[y,x].hex.Initialize();
+                }
             }
+
+            SpawnEmpires();
+            SpawnNomadUnits();
+            GameMode.AddEmpireResource(new Resource());
+            GameMode.InitializeTechs(empires.Count);
+
+            SystemStorage.InitializeSystemStorage(width, height, hexes);
+            initialized = true;
+            RequestUpdate = true;
+        } else {
+            width = SetWidth;
+            height = SetHeight;
+
+            cellGen = GetComponentInChildren<HexCells>();
+            cellGen.width = width;
+            cellGen.height = height;
+
+            cellGen.SetHexes(hexes);
+            cellGen.makeCells();
+
+            hexes = cellGen.GetHexes();
         }
-
-        SpawnEmpires();
-        SpawnNomadUnits();
-        GameMode.AddEmpireResource(new Resources());
-        GameMode.InitializeTechs(empires.Count);
-
+        
     }
 
     //Spawns and instantiates the empires in the game
@@ -242,6 +278,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return hexes;
     }
 
+    //Checks to see what hexes are currently on the user's screen, and then returns them
     public static List<Hex> GetHexesOnScreen(){
         List<Hex> hexesOnScreen = new List<Hex>();
         
@@ -251,6 +288,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
             if(onScreen){
                 hexesOnScreen.Add(hex.hex);
             }
+            hex.hex.referenceObject = hex;
         }
 
         return hexesOnScreen;
@@ -393,6 +431,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return ships;
     }
 
+    //Returns all of the ships without an empire, or Nomad ships
     public static List<Ship> GetNomadShips(){
         List<Ship> ships = new List<Ship>();
         foreach(Unit unit in units){
@@ -407,16 +446,17 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return ships;
     }
 
-    //Returns the amount of resources the empire unit's uses in one turn
-    public static Resources GetUnitGeneration(Empire empire){
+    //Returns the amount of Resource the empire unit's uses in one turn
+    public static Resource GetUnitGeneration(Empire empire){
         int index = GetEmpireNumber(empire);
-        Resources sum = new Resources();
+        Resource sum = new Resource();
         foreach(Unit unit in unitsOfEmpires[index]){
             sum.Add(unit.maintenance);
         }
         return sum;
     }
 
+    //Builds a specific ship on the planet which is retrieved through the canvas controller 
     public static void Build(Hex hex, int index, Ship ship){
         Planet planet = GetPlanet(hex, index);
         ship.ShipPosition = GetHexPosition(hex);
@@ -425,12 +465,14 @@ public Hex GetHexNearestToPos(Vector3 pos){
         CanvasController.Clear();
     }
 
+    //Adds a ship to the list of units that we have. Used mostly for newly built ships
     public static void AddShip(Ship ship, Empire empire){
         int index = GetEmpireNumber(empire);
         unitsOfEmpires[index].Add(ship);
         units.Add(ship);
     }
 
+    //Get's all ships out of the units array
     public static List<Ship> GetAllShips(){
         List<Ship> ships = new List<Ship>();
         foreach(List<Unit> shipList in unitsOfEmpires){
@@ -444,6 +486,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return ships;
     }
 
+    //Makes the AI move each nomad ship
     public static void MoveNomadShips(){
         foreach(Unit unit in units){
             if(unit is Ship){
@@ -455,11 +498,15 @@ public Hex GetHexNearestToPos(Vector3 pos){
         }
     }
 
+    //If there are two opposing ships on a tile, you can have them fight
     public static void Fight(){
+        //First we need to get all of the ships
         Ship[] ships = GetShipsOnPosition(GetHexPosition(MainController.displayingHex));
         List<Ship> sideOne = new List<Ship>();
         List<Ship> sideTwo = new List<Ship>();
         sideOne.Add(ships[0]);
+
+        //A currently niave approach, but we assume that whatever ship isnt with the empire of the first ship is the enemy
         for(int i = 1; i < ships.Length; i++){
             if(GetShipEmpire(ships[i]) == GetShipEmpire(sideOne[0])){
                 sideOne.Add(ships[i]);
@@ -468,6 +515,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
             }
         }
 
+        //Then, for each ship, we do the damage output
         foreach(Ship attackingShip in sideOne){
             foreach(Ship defendingShip in sideTwo){
                 defendingShip.health -= attackingShip.damage;
@@ -484,8 +532,12 @@ public Hex GetHexNearestToPos(Vector3 pos){
                 }
             }
         }
+
+        //Incase any ships died in this battle, we need to recall the canvas so it doesn't display dead ships
         MainController.RequestHexRecall();
     }
+
+    //This function is much like the above function, but it is called from outside of the canvas (most likely the AI), so we know what hex we're on
     public static void Fight(Hex hex){
         Ship[] ships = GetShipsOnPosition(GetHexPosition(hex));
         List<Ship> sideOne = new List<Ship>();
@@ -518,6 +570,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
 
     }
 
+    //Checks to see if the hex has fleets from two different empires on it currently. No allies!
     public static bool DoesHexHaveOpposingFleets(Hex hex){
         Ship[] ships = ShipsOnHex(hex);
         Empire empire = GetShipEmpire(ships[0]);
@@ -587,19 +640,20 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return col;
     }
 
-    //Obtains the resources outputted by all of the planets in an empire
-    static Resources GetPlanetGeneration(Empire empire){
+    //Obtains the Resource outputted by all of the planets in an empire
+    static Resource GetPlanetGeneration(Empire empire){
         List<Planet> planets = GetPlanets(empire);
-        planets = FilterForColonizedPlanets(planets); //we only want colonized planets to generate resources
+        planets = FilterForColonizedPlanets(planets); //we only want colonized planets to generate Resource
 
-        Resources ResourcesGained = new Resources();
+        Resource ResourceGained = new Resource();
         for(int i = 0; i < planets.Count; i++){
-            ResourcesGained.Add(planets[i].GetResourceProduction());
+            ResourceGained.Add(planets[i].GetResourceProduction());
         }
 
-        return ResourcesGained;
+        return ResourceGained;
     }
 
+    //Builds a building on the specific planet. Or more specifically, adds it to queue
     public static void Build(Hex hex, int index, Building building){
         Planet planet = GetPlanet(hex, index);
         building.pos = GetHexPosition(hex);
@@ -668,9 +722,9 @@ public Hex GetHexNearestToPos(Vector3 pos){
         return false;
     }
 
-    //Returns the resources outputted by the empire. Currently only considers planet generation (ship upkeep is definitely going to be implemented)
-    public static Resources GetEmpiresGeneration(Empire empire){
-        Resources planetGen = GetPlanetGeneration(empire);
+    //Returns the Resource outputted by the empire. Currently only considers planet generation (ship upkeep is definitely going to be implemented)
+    public static Resource GetEmpiresGeneration(Empire empire){
+        Resource planetGen = GetPlanetGeneration(empire);
         planetGen.Add(GetUnitGeneration(empire));
         return planetGen;
     }

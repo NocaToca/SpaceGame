@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Resources
+public class Resource
 {
     //The resource class is responsible for all functionality regarding our resources
     
@@ -12,21 +12,21 @@ public class Resources
     public float Science;
 
     //Various constructors; if a float isn't inputted it is assumed it's zero
-    public Resources(){
+    public Resource(){
         Gold = 0;
         Production = 0;
     }
-    public Resources(float Gold){
+    public Resource(float Gold){
         this.Gold = Gold;
         Production = 0.0f;
         Science = 0.0f;
     }
-    public Resources(float Gold, float Production){
+    public Resource(float Gold, float Production){
         this.Gold = Gold;
         this.Production = Production;
         Science = 0.0f;
     }
-    public Resources(float Gold, float Production, float Science){
+    public Resource(float Gold, float Production, float Science){
         this.Gold = Gold;
         this.Production = Production;
         this.Science = Science;
@@ -44,7 +44,7 @@ public class Resources
     }
 
     //Adds two resources together
-    public Resources Add(Resources resource){
+    public Resource Add(Resource resource){
         this.Gold += resource.Gold;
         this.Production += resource.Production;
         this.Science += resource.Science;

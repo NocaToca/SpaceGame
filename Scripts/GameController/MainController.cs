@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MainController : MonoBehaviour
 {
@@ -37,7 +38,7 @@ public class MainController : MonoBehaviour
         GetBoard();
         GetCanvasController();
         prevPlanetIndex = 0;
-        
+        canvasController.RequestRedisplayOfResources();
     }
 
     //Getting the board in the scene
@@ -104,7 +105,6 @@ public class MainController : MonoBehaviour
             //If our interactions are enabled and we click, we want to interact with what we clicked
             if (Input.GetMouseButton(0) && InteractionsEnabled) {
 
-                //Debug.Log("bee");
                 if(prevPlanetIndex != CanvasController.currentPlanetDisplayed){
                     prevPlanetIndex = CanvasController.currentPlanetDisplayed;
                     return;
@@ -169,11 +169,9 @@ public class MainController : MonoBehaviour
         Hex clickedHex = board.GetHexNearestToPos(pos);
 
         if(prevHexObject != null){
-            //Debug.Log(HexBasedAStar.AStar(prevHexObject, clickedHex.referenceObject, board.GetHeight(), board.GetWidth()));
             prevHexObject = null;
         } else {
             prevHexObject = clickedHex.referenceObject;
-            //Debug.Log("bee!");
         }
 
         displayingHex = clickedHex;
@@ -186,9 +184,11 @@ public class MainController : MonoBehaviour
         if(CanvasController.HexInfoDisplayed){
             
         } 
-        canvasController.DisplayHexInfo();
-        canvasController.DisplayHex(clickedHex);
-        
+
+        //Since we now have a better way to display a planet, we go over to that scene 
+        SystemStorage.LoadScene = true;
+        displayingHex = clickedHex;
+        SceneManager.LoadScene("System");
 
     }
 
@@ -223,6 +223,7 @@ public class MainController : MonoBehaviour
         InteractionsEnabled = true;
     }
 
+    //Clears the canvas controller
     public static void ClearCanvasController(){
         canvasController.GetRidOfHexInfo();
         canvasController.DisableBuildMenu();

@@ -21,8 +21,8 @@ public class Planet
 
     public float percentTowardsPlanet = 0.5f;
 
-    //The natural resources this planet starts with
-    Resources NaturalResources;
+    //The natural Resource this planet starts with
+    Resource NaturalResource;
 
     //How much production this planet has made for its current project
     float productionAmount;
@@ -107,14 +107,14 @@ public class Planet
         
     }
 
-    //Returns how much resources this planet generates per turn
-    public Resources GetResourceProduction(){
-        Resources producedResources = new Resources();
-        producedResources.Add(NaturalResources);
+    //Returns how much Resource this planet generates per turn
+    public Resource GetResourceProduction(){
+        Resource producedResource = new Resource();
+        producedResource.Add(NaturalResource);
         for(int i = 0; i < buildings.Count; i++){
-            producedResources.Add(buildings[i].cost);
+            producedResource.Add(buildings[i].cost);
         }
-        return producedResources;
+        return producedResource;
     }
 
     //Adds a building to queue
@@ -128,6 +128,7 @@ public class Planet
         SetAvailableBuildings();
     }
 
+    //Refreshes the check for what buildings are available on this planet
     public void RefreshAvailableBuildings(){
         SetAvailableBuildings();
     }
@@ -162,9 +163,9 @@ public class Planet
         return center + (radius * val);
     }
 
-    //Returns the base resources generated per turn by our planet 
-    public Resources GetNaturalResources(){
-        return NaturalResources;
+    //Returns the base Resource generated per turn by our planet 
+    public Resource GetNaturalResource(){
+        return NaturalResource;
     }
 
     //A abstract function responsible for generating the natural resource production of each planet
@@ -172,17 +173,21 @@ public class Planet
         Debug.LogError("You have tried to initialize a planet of null type!");
     }
 
-    //Sets the natural resources of the planet
-    public void SetNaturalResources(float gold, float prod, float science){
-        NaturalResources = new Resources(gold, prod, science);
-        //NaturalResources.SetGold(gold);
-        //NaturalResources.SetProduction(prod);
+    //Sets the natural Resource of the planet
+    public void SetNaturalResource(float gold, float prod, float science){
+        NaturalResource = new Resource(gold, prod, science);
+        //NaturalResource.SetGold(gold);
+        //NaturalResource.SetProduction(prod);
     }
 
+    //Sets what buildings are available on this planet
     public void SetAvailableBuildings(){
+        //If, for some reason, the planet isnt colonized, we just abort this check
         if(Board.GetEmpireOwningPlanet(this) == null){
             return;
         }
+
+        //This will return the buildings based off of tech requirements, so we don't have to go through that
         availableBuildings = GameMode.GetBuildingsAvialableToEmpire(EmpireThatIsColonized);
         List<string> names = new List<string>();
         for(int i = 0; i < buildings.Count; i++){
@@ -209,10 +214,9 @@ public class Planet
                 availableBuildings.Remove(availableBuildings[i]);
             }
         }
-
-        
     }
 
+    //Returns whether or not the planet has a starport
     public bool HasStarport(){
         foreach(Building building in buildings){
             if(building is Starport){
@@ -222,6 +226,7 @@ public class Planet
         return false;
     }
 
+    //Gets the starport. HasStarport() should be called before calling this
     public Starport GetStarport(){
         foreach(Building building in buildings){
             if(building is Starport){
@@ -232,6 +237,12 @@ public class Planet
         return null;
     }
 }
+
+/*
+For each planet, we setup the natural resources in the GenerationSettings script, where it should look much cleaner.
+
+There is nothing unique about planets besides the resource generation yet
+*/
 
 //Low Food, High Gold, Med Prod
 public class ArcticPlanet : Planet{
@@ -261,7 +272,7 @@ public class ArcticPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResources(gold, prod, science);
+        SetNaturalResource(gold, prod, science);
     }
 
 }
@@ -293,7 +304,7 @@ public class ContinetalPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResources(gold, prod, science);
+        SetNaturalResource(gold, prod, science);
         
     }
 
@@ -326,7 +337,7 @@ public class MoltenPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResources(gold, prod, science);
+        SetNaturalResource(gold, prod, science);
         
     }
 
@@ -359,7 +370,7 @@ public class OceanPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResources(gold, prod, science);
+        SetNaturalResource(gold, prod, science);
         
     }
 }

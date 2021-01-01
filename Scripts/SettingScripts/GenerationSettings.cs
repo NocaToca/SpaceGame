@@ -57,6 +57,12 @@ public class GenerationSettings : MonoBehaviour
     public float ScienceCenterOcean = 6.0f;
     public float ScienceRadOcean = 1.5f;
     // Start is called before the first frame update
+
+    /*
+    This is basically a bunch of code to say "Set the base generation variables of each planet".
+    It's organized so I can search through it easier, but it's basically all the same
+    */
+
     void Awake()
     {
         SetGold();

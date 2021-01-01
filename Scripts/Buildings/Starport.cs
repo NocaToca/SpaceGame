@@ -2,15 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//The starport is one of the most complex buildings. It is required to build ships on a planet and splits the production of the planet to build the ships.
+//It will be able to be upgraded by building other buildings to improve it
 public class Starport : Building
 {
     //We want to override but use the same name as our building cost
-    new public static Resources buildingCost = new Resources(10.0f, 20.0f);
+    new public static Resource buildingCost = new Resource(10.0f, 20.0f);
 
-    public List<Ship> ShipQueue = new List<Ship>();
+    public List<Ship> ShipQueue = new List<Ship>(); //What ships are in our queue
 
+    //How much production is going towards the starport 
     public float percentTowardsStarport = 0.5f;
 
+    //The current amount of production we have produced towards the current ship we are making
     float productionAmount = 0.0f;
 
     public Starport(){
@@ -22,8 +27,9 @@ public class Starport : Building
         this.pos = pos;
     }
 
+    //To build a starport, you'd need the tech "Revolutionized Spaceflight", so we need to make sure we add that
     private void Initialize(){
-        cost = new Resources();
+        cost = new Resource();
         cost.SetGold(-1.0f);
         cost.SetProduction(2.0f);
         name = "Starport";
@@ -31,18 +37,22 @@ public class Starport : Building
         TechPrereq.Add(Tech.GetRSF());
     }
 
+    //If we didnt set it in our construction, this is done here
     public void SetPos(HexCoordinates pos){
         this.pos = pos;
     }
 
+    //The build function for our Starport
     public override void Build(){
         Board.Build(MainController.displayingHex, CanvasController.currentPlanetDisplayed, new Starport());
-   }
+    }
 
-   public virtual Starport Base(){
-       return new Starport();
-   }
+    //Returning the base structure for our building
+    new public virtual Starport Base(){
+        return new Starport();
+    }
 
+    //Handling our build queue much like we handle it with planets
     public void BuildQueue(float production){
         
         productionAmount += production * percentTowardsStarport;
@@ -65,7 +75,7 @@ public class Starport : Building
         //Debug.Log(productionAmount);
     }
 
-   //Adds a ship to queue
+    //Adds a ship to queue
     public void AddToQueue(Ship ship){
         ShipQueue.Add(ship);
     }
