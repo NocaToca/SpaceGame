@@ -32,6 +32,9 @@ public class GameMode : MonoBehaviour
 
     //Gets an empires techs
     public static List<Tech> GetEmpiresTechs(Empire empire){
+        if(empireTechs.Count == 0){
+            return Tech.GetAllTechs();
+        }
         int index = Board.GetEmpireNumber(empire);
         return empireTechs[index];
     }
@@ -62,6 +65,9 @@ public class GameMode : MonoBehaviour
 
     //Out of what techs an empire controls, gets the buildings avaliable to it
     public static List<Building> GetBuildingsAvialableToEmpire(Empire empire){
+        if(empireTechs == null){
+            return Building.GetAllBuildings();
+        }
         List<Building> allBuildings = Building.GetAllBuildings();
         //Tech requirements
         List<Tech> techs = GetEmpiresTechs(empire);
@@ -135,5 +141,14 @@ public class GameMode : MonoBehaviour
     public static void AddToTechQueue(Tech tech, Empire empire){
         int index = Board.GetEmpireNumber(empire);
         empireTechQueues[index].Add(tech);
+    }
+
+    public static int SetEmpireFleetLimit(Empire empire){
+        empire.fleetSize = 4;
+        return empire.fleetSize;
+    }
+
+    public static int EmpireFleetSize(int empire){
+        return SetEmpireFleetLimit(Board.empires[empire]);
     }
 }

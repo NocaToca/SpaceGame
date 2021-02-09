@@ -26,10 +26,14 @@ public class MainController : MonoBehaviour
 
     //Varialbes for ship movement
     static bool choosingHex = false;
-    static Ship movingShip = null;
+    static Fleet movingFleet = null;
 
     //Wether or not we can interact with the board
     static bool InteractionsEnabled = true;
+
+    bool waitingForCompletion = false;
+
+    Vector3 previousWorldSpace = new Vector3(0,0,0);
 
 
     // Start is called before the first frame update
@@ -71,11 +75,22 @@ public class MainController : MonoBehaviour
     }
 
     
+    private bool ScreenMoved(){
+        Vector3 worldPos = Camera.main.gameObject.transform.position;
+        if(Mathf.Abs(worldPos.x - previousWorldSpace.x) >= 0.1f || Mathf.Abs(worldPos.z - previousWorldSpace.z) >= 0.1f ){
+            previousWorldSpace = worldPos;
+            return true;
+        }
+        return false;
+    }
 
     // Update is called once per frame
     void Update()
     {
-        canvasController.ShowUnitTextOnCanvas();
+        if(ScreenMoved()){
+            canvasController.ShowUnitButtonsOnCanvas();
+        }
+        
         //Here, we want to make sure the board isnt null before doing what we wish
         if(board != null){
             //If we want to move a ship, our next click will determine where our ship moves
@@ -84,7 +99,7 @@ public class MainController : MonoBehaviour
                     Hex hexToMoveTo = GetTileUnderMouse();
                     //If we click a hex, move to it, otherwise assume the user wants to cancel 
                     if(hexToMoveTo != null){
-                        Board.RequestMovement(hexToMoveTo, movingShip);
+                        Board.RequestMovement(hexToMoveTo, movingFleet);
                         if(CanvasController.HexInfoDisplayed){
                             canvasController.GetRidOfHexInfo();
                             displayingHex = null;
@@ -97,43 +112,60 @@ public class MainController : MonoBehaviour
                     }
                     //Once we choose a hex, we don't want to choose another
                     choosingHex = false;
-                    movingShip = null;
+                    movingFleet = null;
                     
                 }
             }
-
-            //If our interactions are enabled and we click, we want to interact with what we clicked
-            if (Input.GetMouseButton(0) && InteractionsEnabled) {
-
-                if(prevPlanetIndex != CanvasController.currentPlanetDisplayed){
-                    prevPlanetIndex = CanvasController.currentPlanetDisplayed;
-                    return;
-                }
-
-                if(release){
-                    release = false;
-                    HandleInput();
-                    
-                }
-
+            if(!waitingForCompletion){
+                StartCoroutine(WiatForInput());
+                waitingForCompletion = true;
+            }
             
-            } else
-            if(Input.GetKeyDown(KeyCode.Space)){
-
-                if(CanvasController.HexInfoDisplayed){
-                    canvasController.GetRidOfHexInfo();
-                    displayingHex = null;
-                    EnableInteractions();
-                }
-                
-            } else {
-                release = true;
-            }
         }
     }
 
+    IEnumerator WiatForInput(){
+        bool leftClick = Input.GetMouseButton(0) && InteractionsEnabled;
+        bool spaceClick = Input.GetKeyDown(KeyCode.Space);
+        yield return new WaitForSeconds(.1f);
+        if(CanvasController.buttonPress){
+            CanvasController.buttonPress = false;
+            //return;
+        } else
+        //If our interactions are enabled and we click, we want to interact with what we clicked
+        if (leftClick) {
+
+            if(prevPlanetIndex != CanvasController.currentPlanetDisplayed){
+                prevPlanetIndex = CanvasController.currentPlanetDisplayed;
+                //return;
+            }
+
+            if(release){
+                release = false;
+                HandleInput();
+                    
+            }
+
+            
+        } else
+        if(spaceClick){
+
+            if(CanvasController.HexInfoDisplayed){
+                canvasController.GetRidOfHexInfo();
+                displayingHex = null;
+                EnableInteractions();
+            }
+                
+        } else {
+            release = true;
+        }
+        waitingForCompletion = false;
+        
+        //CanvasController.buttonPress = false;
+    }
+
     //Gets the tile under the mouse
-    Hex GetTileUnderMouse(){
+    public static Hex GetTileUnderMouse(){
         Ray inputRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 		RaycastHit hit;
 		if (Physics.Raycast(inputRay, out hit)) {
@@ -210,8 +242,8 @@ public class MainController : MonoBehaviour
     }
 
     //Called when we request to move a ship
-    public static void RequestMovement(Ship ship){
-        movingShip = ship;
+    public static void RequestMovement(Fleet fleet){
+        movingFleet = fleet;
         choosingHex = true;
     }
 

@@ -12,45 +12,7 @@ public class Hex
         return;
     }
 
-    //Using a seed and a settings struct, we reliably randomly create a random type of Hex
-    public static Hex CreateNewHex(System.Random seed, HexSettings hexSettings){
-
-        float percent = Random.Range(0.0f, 1.0f);
-
-        //This array is left like this for easier future implemtation of more types of hexes
-        HexValues[] chances = new HexValues[2];
-        chances[1] = hexSettings.SpaceHex;
-        chances[0] = hexSettings.SystemHex;
-
-        //I'm sorting the array from least to greatest in terms of their chance
-        for(int i = 1; i < chances.Length; i++){
-            if(chances[i].chance > chances[i-1].chance){
-                HexValues store = chances[i-1];
-                chances[i-1] = chances[i];
-                chances[i] = store;
-                i = 1;
-            }
-        }
-        //As now we can just run through an if statement for each and break once we find the first one that is true
-        int index = 0;
-        for(int i = 1; i < chances.Length; i++){
-            if(percent > chances[i].chance){
-                index = i;
-                break;
-            }
-        }
-
-        Hex returningHex = new Hex();
-
-        if(chances[index].type == "Space"){
-            returningHex = new SpaceHex();
-        } else
-        if(chances[index].type == "System"){
-            returningHex = new SystemHex();
-        }
-        return returningHex;
-
-    }
+    
 }
 [System.Serializable]
 public class SystemHex : Hex{
@@ -104,4 +66,19 @@ public class SystemHex : Hex{
 [System.Serializable]
 public class SpaceHex : Hex{
 
+}
+public class EmptyHex : Hex{
+
+}
+public class AsteroidField : Hex{
+
+}
+public class DeepSpace : Hex {
+
+}
+public class QuantumAsteroidField : Hex{
+
+}
+public class NeutronStar : Hex{
+    
 }

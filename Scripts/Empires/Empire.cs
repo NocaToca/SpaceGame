@@ -9,6 +9,8 @@ public class Empire
 
     public string Name = "Noca";
 
+    public int fleetSize = 4;
+
     public Empire(Color color, int playerNumber){
         EmpireVisuals.empireColors.Add(color);
         this.playerNumber = playerNumber;

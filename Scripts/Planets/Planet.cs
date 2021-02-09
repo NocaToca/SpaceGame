@@ -11,6 +11,8 @@ public class Planet
     public bool Colonized = false;
     public Empire EmpireThatIsColonized;
 
+    public string name;
+
     //Gives a list of buildings that have been built on this tile
     List<Building> buildings = new List<Building>();
 
@@ -19,6 +21,8 @@ public class Planet
 
     public List<Building> availableBuildings;
 
+    public List<Pops> popsOnPlanet;
+
     public float percentTowardsPlanet = 0.5f;
 
     //The natural Resource this planet starts with
@@ -26,6 +30,7 @@ public class Planet
 
     //How much production this planet has made for its current project
     float productionAmount;
+    float foodAmount;
 
     public Planet(){
         //SetAvailableBuildings();
@@ -38,8 +43,14 @@ public class Planet
 
     //Colonizes the planet for the given empire
     public void Colonize(Empire empire){
+        popsOnPlanet = new List<Pops>();
         Colonized = true;
         EmpireThatIsColonized = empire;
+        popsOnPlanet.Add(new Pops());
+    }
+
+    public void SetName(string name){
+        this.name = name;
     }
 
     //Gets the information on who colonized this planet, if it is colonized
@@ -107,6 +118,36 @@ public class Planet
         
     }
 
+    public void GeneratePop(){
+        if(!Colonized){
+            return;
+        }
+        float food = GetResourceProduction().Food;
+        foodAmount += food;
+        float goal = GetNextFoodAmount();
+        if(food >= goal){
+            List<Pops> typesOfPops = GetTypesOfPops();
+            int ran = Random.Range(0, typesOfPops.Count - 1);
+            popsOnPlanet.Add(typesOfPops[ran]);
+        }
+    }
+
+    private float GetNextFoodAmount(){
+        return Mathf.Exp(popsOnPlanet.Count) + 1.0f;
+    }
+
+    private List<Pops> GetTypesOfPops(){
+        List<Pops> returnPops = new List<Pops>();
+        List<string> names = new List<string>();
+        foreach(Pops pop in popsOnPlanet){
+            if(!names.Contains(pop.name)){
+                names.Add(pop.name);
+                returnPops.Add(pop);
+            }
+        }
+        return returnPops;
+    }
+
     //Returns how much Resource this planet generates per turn
     public Resource GetResourceProduction(){
         Resource producedResource = new Resource();
@@ -114,6 +155,12 @@ public class Planet
         for(int i = 0; i < buildings.Count; i++){
             producedResource.Add(buildings[i].cost);
         }
+        // foreach(Pops pop in popsOnPlanet){
+        //     producedResource.Add(pop.popResource);
+        //     if(pop.assignedResource != null){
+        //         producedResource.Add(pop.popResource);
+        //     }
+        // }
         return producedResource;
     }
 
@@ -155,6 +202,7 @@ public class Planet
         if(HasStarport()){
             GetStarport().BuildQueue(production);
         }
+        GeneratePop();
     }
 
     //Returns a float with the center and radius of the value
@@ -174,8 +222,8 @@ public class Planet
     }
 
     //Sets the natural Resource of the planet
-    public void SetNaturalResource(float gold, float prod, float science){
-        NaturalResource = new Resource(gold, prod, science);
+    public void SetNaturalResource(float gold, float prod, float science, float food){
+        NaturalResource = new Resource(gold, prod, science, food);
         //NaturalResource.SetGold(gold);
         //NaturalResource.SetProduction(prod);
     }
@@ -183,7 +231,7 @@ public class Planet
     //Sets what buildings are available on this planet
     public void SetAvailableBuildings(){
         //If, for some reason, the planet isnt colonized, we just abort this check
-        if(Board.GetEmpireOwningPlanet(this) == null){
+        if(!SystemStorage.workingScence && Board.GetEmpireOwningPlanet(this) == null){
             return;
         }
 
@@ -236,6 +284,40 @@ public class Planet
         Debug.LogError("The planet detected a Starport but it seemingly vanished!");
         return null;
     }
+
+    public void AssignPopProduction(int index){
+        Resource resource = new Resource();
+        resource.SetProduction(1.0f);
+        popsOnPlanet[index].assignedResource = resource;
+    }
+    public void AssignPopFood(int index){
+        Resource resource = new Resource();
+        resource.SetFood(1.0f);
+        popsOnPlanet[index].assignedResource = resource;
+    }
+    public void AssignPopScience(int index){
+        Resource resource = new Resource();
+        resource.SetScience(1.0f);
+        popsOnPlanet[index].assignedResource = resource;
+    }
+    public void AssignPopGold(int index){
+        Resource resource = new Resource();
+        resource.SetGold(1.0f);
+        popsOnPlanet[index].assignedResource = resource;
+    }
+    public void UnassignPop(int index){
+        popsOnPlanet[index].assignedResource = null;
+    }
+
+    public List<Pops> GetUnassignedPops(){
+        List<Pops> unassignedPops = new List<Pops>();
+        foreach(Pops pop in popsOnPlanet){
+            if(pop.assignedResource == null){
+                unassignedPops.Add(pop);
+            }
+        }
+        return unassignedPops;
+    }
 }
 
 /*
@@ -272,7 +354,8 @@ public class ArcticPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResource(gold, prod, science);
+        float food = GetResourceFromVals(FoodCenter, FoodRad);
+        SetNaturalResource(gold, prod, science, food);
     }
 
 }
@@ -304,7 +387,8 @@ public class ContinetalPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResource(gold, prod, science);
+        float food = GetResourceFromVals(FoodCenter, FoodRad);
+        SetNaturalResource(gold, prod, science, food);
         
     }
 
@@ -337,7 +421,8 @@ public class MoltenPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResource(gold, prod, science);
+        float food = GetResourceFromVals(FoodCenter, FoodRad);
+        SetNaturalResource(gold, prod, science, food);
         
     }
 
@@ -370,7 +455,8 @@ public class OceanPlanet : Planet{
         float gold = GetResourceFromVals(GoldCenter, GoldRad);
         float prod = GetResourceFromVals(ProdCenter, ProdRad);
         float science = GetResourceFromVals(ScienceCenter, ScienceRad);
-        SetNaturalResource(gold, prod, science);
+        float food = GetResourceFromVals(FoodCenter, FoodRad);
+        SetNaturalResource(gold, prod, science, food);
         
     }
 }

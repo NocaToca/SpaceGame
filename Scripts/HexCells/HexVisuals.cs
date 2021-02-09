@@ -7,7 +7,12 @@ public static class HexVisuals{
 
     //Initial colors of certain tiles
     static Color sysHexCol = Color.white;
-    static Color spaceHexCol = Color.black;
+    static Color spaceHexCol = Color.grey;
+    static Color emptyHexCol = new Color(0,0,0,0);
+    static Color asteroidFieldCol = new Color(0.423f, 0.164f, 0.054f);
+    static Color deepSpaceCol = Color.black;
+    static Color quantumAsteroidFieldCol = Color.blue;
+    static Color neutronStarCol = Color.cyan;
 
     //Gets the color of the hex
     public static Color GetColor(Hex hex){
@@ -19,6 +24,21 @@ public static class HexVisuals{
         }
         if(hex is SpaceHex){
             return spaceHexCol;
+        }
+        if(hex is EmptyHex){
+            return emptyHexCol;
+        }
+        if(hex is AsteroidField){
+            return asteroidFieldCol;
+        }
+        if(hex is DeepSpace){
+            return deepSpaceCol;
+        }
+        if(hex is QuantumAsteroidField){
+            return quantumAsteroidFieldCol;
+        }
+        if(hex is NeutronStar){
+            return neutronStarCol;
         }
         return new Color(0,0,0,0);
 

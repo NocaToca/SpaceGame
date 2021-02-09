@@ -8,4 +8,23 @@ public class Pops
     //production
     public Resource popResource;
     public string name;
+    public Resource assignedResource;
+
+    public List<PopModifiers> popMods = new List<PopModifiers>();
+
+    public Pops(){
+        name = "Joe Glyptodon";
+    }
+    public Pops(string name){
+        this.name = name;
+    }
+
+    public void SetResource(Resource resource){
+        assignedResource = resource;
+    }
+
+}
+
+public class PopModifiers{
+
 }

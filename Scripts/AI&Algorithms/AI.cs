@@ -49,7 +49,7 @@ public class AI : MonoBehaviour
         List<Ship> ships = Board.GetNomadShips();
         foreach(Ship ship in ships){
             if(Board.DoesHexHaveOpposingFleets(Board.GetHexShipOn(ship))){
-                Board.Fight(Board.GetHexShipOn(ship));
+                Board.Fight(ship, Board.GetOpposingShipOnHex(ship));
             }
         }
     }

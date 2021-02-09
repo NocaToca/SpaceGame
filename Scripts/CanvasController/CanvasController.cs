@@ -23,6 +23,8 @@ public class CanvasController : MonoBehaviour
     //The current unit index we are displaying (can be greater than the length of units in a system but not lower than 0)
     public static int currentUnitDisplayed;
 
+    public static int currentFleetDisplayed;
+
     //Whether or not the canvas was interacted with
     public static bool wasInteractedWith = false;
 
@@ -34,13 +36,28 @@ public class CanvasController : MonoBehaviour
 
     //The list of text displaying units, along with the text we base that text off of
     static List<Text> textList = new List<Text>();
+    static List<Button> buttonList = new List<Button>();
     public Text unitTextBase;
+    public Button unitButtonBase;
+
+    private bool updateIndex = false;
 
     //Whether or not we're hiding the text
     public bool hideText = false;
 
     //Whether or not we're displaying the list of ships
     public bool shipListDisplayed = false;
+
+    public Image ShipDisplay;
+
+    public static bool buttonPress = false;
+    
+    public Button MoveButton;
+    public Button CreateFleetButton;
+    public Button FightButton;
+    public Button ScrollRightInFleets;
+    public Button ScrollLeftInFleets;
+    public Text ShipNameText;
     
 /********************************************************************Button Call Functions************************************************************/
     //These functions are called by our buttons on our UI
@@ -49,15 +66,18 @@ public class CanvasController : MonoBehaviour
     public void EndTurn(){
         GameMode.EndTurn(Board.GetPlayerEmpire());
         UpdateResourceDisplay();
+        buttonPress = true;
     }
 
     //Request to redisplay the resources on our resource panel. Used so that when we go back to the board scene it isn't all 0
     public void RequestRedisplayOfResources(){
+        buttonPress = true;
         UpdateResourceDisplay();
     }
 
     //Increments the planet index by one
     public void IncrementPlanetIndex(){
+        buttonPress = true;
         currentPlanetDisplayed++;
         wasInteractedWith = true;
         MainController.RequestHexRecall();
@@ -66,6 +86,7 @@ public class CanvasController : MonoBehaviour
     //Decrements the planet index by one; resets to the top of the planet list when less than 0
     public void DecrementPlanetIndex(){
         currentPlanetDisplayed--;
+        buttonPress = true;
         if(currentPlanetDisplayed < 0){
             SystemHex sys = (SystemHex)MainController.displayingHex;
             currentPlanetDisplayed = sys.GetPlanetsLength() - 1;
@@ -76,6 +97,7 @@ public class CanvasController : MonoBehaviour
 
     //Increments the ship index
     public void IncrementShipIndex(){
+        buttonPress = true;
         currentUnitDisplayed++;
         wasInteractedWith = true;
         MainController.RequestHexRecall();
@@ -83,6 +105,7 @@ public class CanvasController : MonoBehaviour
 
     //Decrements the ship index; resets to the top if the value is less than 0
     public void DecrementShipIndex(){
+        buttonPress = true;
         currentUnitDisplayed--;
         if(currentUnitDisplayed < 0){
             currentUnitDisplayed = Board.ShipsOnHex(MainController.displayingHex, Board.GetPlayerEmpire()).Length - 1;
@@ -483,10 +506,54 @@ public class CanvasController : MonoBehaviour
         }
         textList.Clear();
         if(!hideText){
-            List<Hex> hexes = Board.GetHexesOnScreen();
+            List<Hex> hexes = Board.GetHexesOnScreenWithShips();
             foreach(Hex hex in hexes){
                 AddUnitTextAboveHex(hex);
             }
+        }
+    }
+
+    public void ShowUnitButtonsOnCanvas(){
+         foreach(Button button in buttonList){
+            //Due to us being able to switch scenes, we have to make sure that our text is still there
+            if(button != null){
+                GameObject.Destroy(button.gameObject);
+            }
+        }
+        buttonList.Clear();
+        if(!hideText){
+            List<Hex> hexes = Board.GetHexesOnScreenWithShips();
+            foreach(Hex hex in hexes){
+                AddUnitButtonAboveHex(hex);
+            }
+        }
+    }
+
+    private void AddUnitButtonAboveHex(Hex hex){
+        Ship[] ships = Board.ShipsOnHex(hex);
+        if(ships.Length >= 1){
+            GameObject parentObject = this.transform.GetChild(4).gameObject;
+
+            Button button = GameObject.Instantiate(unitButtonBase);
+            button.transform.SetParent(parentObject.transform);
+
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(hex.referenceObject.transform.position);
+
+            button.image.rectTransform.position = new Vector3(screenPos.x, screenPos.y, screenPos.z);
+
+            if(Board.DoesHexHaveOpposingFleets(hex)){
+                button.image.color = Color.white;
+            } else
+            if(Board.GetShipEmpire(ships[0]) != null){
+                button.image.color = EmpireVisuals.GetEmpireColor(Board.GetShipEmpire(ships[0]));
+            } else {
+                button.image.color = new Color(.5f, .5f, .5f, 1f);
+            }
+
+            Text text = button.gameObject.GetComponentInChildren<Text>();
+            text.text = "" + ships.Length;
+
+            buttonList.Add(button);
         }
     }
 
@@ -629,6 +696,7 @@ public class CanvasController : MonoBehaviour
     void Start(){
         currentPlanetDisplayed = 0;
         currentUnitDisplayed = 0;
+        currentFleetDisplayed = 0;
     }
     public static bool checkWasInteracted(){
         if(wasInteractedWith){
@@ -646,13 +714,19 @@ public class CanvasController : MonoBehaviour
     /*********************************************************************Interacting With Ships**********************************************************************************/
     //Almost all of these functions are self explanatory 
     public void MoveShip(){
+        buttonPress = true;
         Ship[] ships = Board.ShipsOnHex(MainController.displayingHex);
         Ship ship = ships[currentUnitDisplayed % ships.Length];
-        MainController.RequestMovement(ship);
+        Fleet shipFleet = Board.GetShipFleet(ship);
+        if(shipFleet == null){
+            shipFleet = new Fleet(ship);
+        }
+        MainController.RequestMovement(shipFleet);
         MainController.EnableInteractions();
     }
 
     public void ColonizePlanet(){
+        buttonPress = true;
         SystemHex sys = (SystemHex)MainController.displayingHex;
         if(sys != null){
             MainController.Colonize(sys, currentPlanetDisplayed);
@@ -662,6 +736,7 @@ public class CanvasController : MonoBehaviour
     }
 
     public void BuildOnPlanet(){
+        buttonPress = true;
         if(!BuildMenuDisplaying){
             EnableBuildMenu();
         } else {
@@ -670,6 +745,7 @@ public class CanvasController : MonoBehaviour
     }
 
     public void ShowAvailableTechs(){
+        buttonPress = true;
         if(!BuildMenuDisplaying){
             EnableTechMenu();
         } else {
@@ -678,7 +754,92 @@ public class CanvasController : MonoBehaviour
     }
 
     public void Fight(){
+        buttonPress = true;
         Board.Fight();
+    }
+
+    public void IncrementFleetIndex(){
+        buttonPress = true;
+        currentFleetDisplayed++;
+        updateIndex = true;
+        DisplayFleetInfo();
+    }
+    public void DecrementFleetIndex(){
+        buttonPress = true;
+        if(currentFleetDisplayed == 0){
+            Hex hex = MainController.displayingHex;
+
+            Ship[] ships = Board.ShipsOnHex(hex);
+            //bool fleets = false;
+            List<Fleet> fleets = new List<Fleet>();
+            foreach(Ship ship in ships){
+                Fleet fleet = Board.GetShipFleet(ship);
+                if(fleet != null){
+                    fleets.Add(new Fleet(ship));
+                } else
+                if(!fleets.Contains(fleet)){
+                    fleets.Add(fleet);
+                }
+            }
+
+            currentFleetDisplayed += fleets.Count;
+        } else {
+            currentFleetDisplayed--;
+        }
+        updateIndex = true;
+        DisplayFleetInfo();
+    }
+
+    public void DisplayFleetInfo(){
+        Hex hex;
+
+        if(!updateIndex){
+            hex = MainController.GetTileUnderMouse();
+            MainController.displayingHex = hex;
+            currentFleetDisplayed = 0;
+        } else {
+            updateIndex = false;
+        }
+
+        hex = MainController.displayingHex;
+        buttonPress = true;
+
+        Ship[] ships = Board.ShipsOnHex(hex);
+        //bool fleets = false;
+        List<Fleet> fleets = new List<Fleet>();
+        foreach(Ship ship in ships){
+            Fleet fleet = Board.GetShipFleet(ship);
+            if(fleet == null){
+                fleets.Add(new Fleet(ship));
+            } else
+            if(!fleets.Contains(fleet)){
+                fleets.Add(fleet);
+            }
+        }
+        currentFleetDisplayed %= fleets.Count;
+
+        if(Board.DoesHexHaveOpposingFleets(hex)){
+            FightButton.interactable = true;
+        } else {
+            FightButton.interactable = false;
+        }
+        if(fleets[currentFleetDisplayed].GetMovePoints() >= 1 && Board.GetPlayerEmpire() == Board.GetShipEmpire(fleets[currentFleetDisplayed].shipsInFleet[0])){
+            MoveButton.interactable = true;
+        } else {
+            MoveButton.interactable = false;
+        }
+        if(fleets.Count > 1){
+            CreateFleetButton.interactable = true;
+            ScrollLeftInFleets.gameObject.SetActive(true);
+            ScrollRightInFleets.gameObject.SetActive(true);
+        } else {
+            CreateFleetButton.interactable = false;
+            ScrollRightInFleets.gameObject.SetActive(false);
+            ScrollLeftInFleets.gameObject.SetActive(false);
+        }
+
+        ShipNameText.gameObject.SetActive(true);
+        ShipNameText.text = fleets[currentFleetDisplayed%fleets.Count].shipsInFleet[0].name;
     }
 
 }

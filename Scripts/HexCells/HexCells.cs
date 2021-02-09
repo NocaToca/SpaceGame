@@ -32,6 +32,12 @@ public class HexCells : MonoBehaviour
 	public int seed;
 	System.Random rand;
 
+	public AnimationCurve aniCurve;
+	public int octaves;
+    public float persistance;
+    public float lacunarity;
+    public float scale;
+
 	Color[] cellColors;
 	bool[] debugTouch;
 
@@ -42,7 +48,14 @@ public class HexCells : MonoBehaviour
 
 	//The initialize function to, well, initialize the cell generator
 	public void Initialize(){
-		hexSettings = new HexSettings(.90f, .10f);
+		hexSettings = new HexSettings(/*Space*/.89f, /*System*/.10f, /*Empty*/.10f,/*Asteroid*/.1f,/*Deep Space*/.90f,/*QAF*/.50f, /*Neutron Star*/.50f);
+		hexSettings.SetLowerTilesHeight(.3f);
+		hexSettings.SetMiddleTilesHeight(.95f);
+		hexSettings.SetUpperTilesHeight(1.0f);
+
+		NoiseSettings settings = new NoiseSettings(octaves, persistance, lacunarity, scale);
+		HexGenerator.GenerateNoiseBoard(width, height, 0, settings, aniCurve);
+
 		cells = new HexObject[height * width];
 		cellColors = new Color[height * width];
 		debugTouch = new bool[height * width];
@@ -88,7 +101,7 @@ public class HexCells : MonoBehaviour
 
 		//Initializing each cell
 		HexObject cell = hexes[z,x] = Instantiate<HexObject>(cellPrefab);
-		hexes[z,x].hex = Hex.CreateNewHex(rand, hexSettings);
+		hexes[z,x].hex = HexGenerator.CreateNewHex(rand, hexSettings, x, z);
 		cell.hex = hexes[z,x].hex;
 		cell.transform.SetParent(transform, false);
 		cell.transform.localPosition = position;
@@ -135,23 +148,51 @@ public class HexCells : MonoBehaviour
 
 //Setting structs
 public struct HexSettings{
+	public float lowerTilesHeight;
+	public float middleTilesHeight;
+	public float upperTilesHeight;
+
 	public HexValues SpaceHex;
 	public HexValues SystemHex;
+	public HexValues EmptyHex;
+	public HexValues AsteroidField;
+	public HexValues DeepSpace;
+	public HexValues QuantumAsteroidField;
+	public HexValues NeutronStar;
 
-	public HexSettings(float spaceChance, float systemChance){
-		SpaceHex = new HexValues("Space", 1.0f-spaceChance);
-		SystemHex = new HexValues("System", 1.0f-systemChance);
+	public HexSettings(float spaceChance, float systemChance, float emptyChance, float asteroidChance, float deepChance, float quantumChance, float neutronChance){
+		SpaceHex = new HexValues("Space", 1.0f-spaceChance, "Middle");
+		SystemHex = new HexValues("System", 1.0f-systemChance, "Middle");
+		EmptyHex = new HexValues("Empty", 1.0f-emptyChance, "Lower");
+		AsteroidField = new HexValues("Asteroid Field", 1.0f-asteroidChance, "Middle");
+		DeepSpace = new HexValues("Deep Space", 1.0f-deepChance, "Lower");
+		QuantumAsteroidField = new HexValues("Quantum Asteroid Field", 1.0f-quantumChance, "Upper");
+		NeutronStar = new HexValues("Neutron Star", 1.0f - neutronChance, "Upper");
+		lowerTilesHeight = .1f;
+		middleTilesHeight = .9f;
+		upperTilesHeight = 1.0f;
+	}
+
+	public void SetLowerTilesHeight(float val){
+		lowerTilesHeight = val;
+	}
+	public void SetMiddleTilesHeight(float val){
+		middleTilesHeight = val;
+	}
+	public void SetUpperTilesHeight(float val){
+		upperTilesHeight = val;
 	}
 }
 
 public struct HexValues{
 	public float chance;
 	public string type;
+	public string height;
 
-	public HexValues(string type, float chance){
+	public HexValues(string type, float chance, string height){
 		this.type = type;
 		this.chance = chance;
-
+		this.height = height;
 	}
 
 }

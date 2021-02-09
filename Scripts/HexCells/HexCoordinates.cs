@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 
 //The hex coordinate system is so we can store our x,y,z hex coordinates in an array
 [System.Serializable]
@@ -33,6 +34,10 @@ public struct HexCoordinates {
 		return ("(" +
 			x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ")");
 	}
+
+    public override int GetHashCode(){
+        return Tuple.Create(x,z,y).GetHashCode();
+    }
 }
 
 public struct Coords{
