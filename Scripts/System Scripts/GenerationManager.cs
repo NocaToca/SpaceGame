@@ -11,6 +11,11 @@ public class GenerationManager
     public static Material Atmosphere;
     public static Material Clouds;
 
+    public int displayingPlanet = 0;
+
+    public float radius = 7.5f;
+    List<Vector3> planetPos = new List<Vector3>();
+
     public CubeSphere cubeSpherePrefab;
 
     List<GameObject> planets = new List<GameObject>();
@@ -19,11 +24,19 @@ public class GenerationManager
     //List<bool> cloudsEnabled = new List<bool>();
     List<Texture2D> cloudTextures = new List<Texture2D>();
 
+    List<float> planetRotations = new List<float>();
+
     List<GameObject> gameObjectsLoaded = new List<GameObject>();
+
+    //bool waiting = false;
 
     CubeSphere body;
     CubeSphere clouds;
     CubeSphere atmosphere;
+
+    Vector3 movingPos;
+    public float movingAngle;
+    public float lerp = 0.0f;
 
     //This is just a base function class to generate a molten planet based on nothing
     public void MakeOceanPlanet(GameObject system){
@@ -50,16 +63,117 @@ public class GenerationManager
         } else {
             clouds.gameObject.SetActive(false);
         }
+        planetRotations.Add(Random.Range(10.0f, 24.0f));
+
+        planets.Add(planet);
         gameObjectsLoaded.Add(body.gameObject);
         gameObjectsLoaded.Add(atmosphere.gameObject);
         gameObjectsLoaded.Add(clouds.gameObject);
+    }
+
+    public void MakeArcticPlanet(GameObject system){
+        GameObject planet = new GameObject("Planet");
+            
+        planet.transform.parent = system.transform;
+        cubeSpherePrefab = system.GetComponentInChildren<CubeSphere>();
+        CubeSphere sphere = Object.Instantiate(cubeSpherePrefab);
+        sphere.transform.parent = planet.transform;
+        sphere.Generate();
+
+        body = planet.transform.GetChild(0).gameObject.GetComponent<CubeSphere>();
+        atmosphere = planet.transform.GetChild(1).gameObject.GetComponent<CubeSphere>();
+        clouds = planet.transform.GetChild(2).gameObject.GetComponent<CubeSphere>();
+
+        Texture2D planetTexture = PlanetVisuals.GetArcticPlanetTexture();
+        Color atmosphereColor = PlanetVisuals.GetArcticPlanetAtmosphereColor();
+        Texture2D cloudTexture = null;
+
+        body.SetTexture(planetTexture);
+        atmosphere.SetColor(atmosphereColor);
+        if(cloudTexture != null){
+            clouds.SetClouds(cloudTexture);
+        } else {
+            clouds.gameObject.SetActive(false);
+        }
+        planetRotations.Add(Random.Range(10.0f, 24.0f));
+
+        planets.Add(planet);
+        gameObjectsLoaded.Add(body.gameObject);
+        gameObjectsLoaded.Add(atmosphere.gameObject);
+        gameObjectsLoaded.Add(clouds.gameObject);
+    }
+
+    public void PlacePlanets(){
+        if(planets.Count == 0){
+            return;
+        }
+        if(planets.Count == 1){
+            Vector3 pos = new Vector3(-radius,0,0);
+            planets[0].transform.position = pos;
+            planets[0].transform.Rotate(0, 0, planetRotations[0]);
+            return;
+        }
+        int val = planets.Count;
+        float increment = 360.0f / val;
+        for(float angle = 180.0f, i = 0; angle < 540.0f; angle += increment, i += 1.0f){
+            float x = Mathf.Cos(angle * Mathf.Deg2Rad) * radius;
+            float y = Mathf.Sin(angle * Mathf.Deg2Rad) * radius;
+            Vector3 pos = new Vector3(x, 0, y);
+
+            planets[(int)i].transform.position = pos;
+            planets[(int)i].transform.Rotate(0, 0, planetRotations[(int)i]);
+        }
+    }
+
+    public bool MovePlanets(){
+        lerp += .01f;
+        float angleOffset = Mathf.Lerp(0, 180, lerp);
+        angleOffset *= Mathf.Deg2Rad;
+        int val = planets.Count;
+        float increment = 360.0f / val;
+        for(float angle = 180.0f, i = 0; angle < 540.0f; angle += increment, i += 1.0f){
+            float x = Mathf.Cos((angle * Mathf.Deg2Rad) + angleOffset) * radius;
+            float y = Mathf.Sin((angle * Mathf.Deg2Rad) + angleOffset) * radius;
+            Vector3 pos = new Vector3(x, 0, y);
+
+            planets[(int)i].transform.position = pos;
+            //planets[(int)i].transform.Rotate(0, 0, planetRotations[(int)i]);
+        }
+        //Debug.Log(lerp);
+        return lerp > .99f && lerp < 1.01f;
+    }
+    
+    public void SwapOrder(){
+        List<GameObject> pla = new List<GameObject>();
+        for(int i = 1; i < planets.Count; i++){
+            pla.Add(planets[i]);
+        }
+        pla.Add(planets[0]);
+        planets = pla;
+    }
+
+    public void PlaceStar(GameObject system){
+        GameObject planet = new GameObject("Star");
+            
+        planet.transform.parent = system.transform;
+        cubeSpherePrefab = system.GetComponentInChildren<CubeSphere>();
+        CubeSphere sphere = Object.Instantiate(cubeSpherePrefab);
+        sphere.transform.parent = planet.transform;
+        sphere.IsStar = true;
+        //sphere.radius *= 5.0f;
+        //sphere.gridSize *= 5;
+        sphere.Generate();
+        planet.transform.localScale = new Vector3(25, 25, 25);
+        planet.transform.position = new Vector3(28, 0, 0);
+
+
     }
 
     //Loads the information stored in the generation script
     public void Load(GameObject system){
         //GameObject system = GameObject.FindGameObjectsWithTag("SystemManager")[0]
         //We basically just create each planet
-        for(int i = 0; i < 1; i++){
+        for(int i = 0; i < planetTextures.Count; i++){
             GameObject planet = new GameObject("Planet");
             
             planet.transform.parent = system.transform;
@@ -79,10 +193,14 @@ public class GenerationManager
             } else {
                 clouds.gameObject.SetActive(false);
             }
+
+            planets.Add(planet);
             gameObjectsLoaded.Add(body.gameObject);
             gameObjectsLoaded.Add(atmosphere.gameObject);
             gameObjectsLoaded.Add(clouds.gameObject);
         }
+
+        PlacePlanets();
         
     }
 
@@ -90,6 +208,9 @@ public class GenerationManager
     public void Exit(){
         foreach(GameObject gameObject in gameObjectsLoaded){
             Object.Destroy(gameObject, 0.0f);
+        }
+        foreach(GameObject planet in planets){
+            Object.Destroy(planet, 0.0f);
         }
         gameObjectsLoaded.Clear();
     }
@@ -102,7 +223,7 @@ public class GenerationManager
             int numPlanets = sys.planets.Length;
             
             for(int i = 0; i < numPlanets; i++){
-                GeneratePlanet(sys.planets[i], gm);
+                gm = GeneratePlanet(sys.planets[i], gm);
             }
         }
         return gm;
@@ -110,11 +231,6 @@ public class GenerationManager
 
     //Generates a planet using a planet manager
     public static GenerationManager GeneratePlanet(Planet planet, GenerationManager gm){
-        //GameObject planet = new GameObject("Planet");
-        //planet.transform.parent = this.transform;
-        //CubeSphere sphere = Instantiate(cubeSpherePrefab);
-        //sphere.transform.parent = planet.transform;
-        //sphere.Generate();
 
         PlanetManager pm = new PlanetManager();
         //planetsGened++;
@@ -123,11 +239,14 @@ public class GenerationManager
         pm.Generate(planet);
 
         //planets.Add(planet);
+        gm.planetRotations.Add(Random.Range(10.0f, 24.0f));
         gm.planetTextures.Add(pm.planetTexture);
         gm.atmosphereColors.Add(pm.planetColor);
         gm.cloudTextures.Add(pm.cloudTexture);
         return gm;
     }
+
+    
 
     public static void ResetGeneration(){
         planetsGened = 0;

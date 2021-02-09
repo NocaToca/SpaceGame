@@ -17,6 +17,8 @@ public class Ship : Unit{
     public int movementPoints = 2;
     public int availableMovementPoints = 2;
 
+    public int space = 0;
+
     // public Ship(Empire empire, Hex hex){
     //     Super(empire);
     //     this.hex = hex;
@@ -47,6 +49,8 @@ public class ColonyShip : Ship{
 
         health = 100.0f;
         damage = 0.0f;
+
+        space = 1;
     }
 
     public ColonyShip(Empire empire, HexCoordinates pos){
@@ -62,6 +66,8 @@ public class ColonyShip : Ship{
 
         health = 100.0f;
         damage = 0.0f;
+
+        space = 1;
     }
 
     public void ColonizePlanet(Planet planet){
@@ -88,6 +94,7 @@ public class ProtectorShip : Ship{
 
         health = 90.0f;
         damage = 30.0f;
+        space = 1;
     }
 
     public ProtectorShip(Empire empire, HexCoordinates pos){
@@ -102,6 +109,8 @@ public class ProtectorShip : Ship{
          
         health = 90.0f;
         damage = 30.0f;
+        space = 1;
+
     }
     public override void Build(){
         Board.Build(MainController.displayingHex, CanvasController.currentPlanetDisplayed, new ProtectorShip());
@@ -123,6 +132,8 @@ public class AssualtShip : Ship{
 
         health = 90.0f;
         damage = 50.0f;
+        space = 1;
+
     }
 
     public AssualtShip(Empire empire, HexCoordinates pos){
@@ -137,6 +148,8 @@ public class AssualtShip : Ship{
          
         health = 90.0f;
         damage = 50.0f;
+        space = 1;
+
     }
     public override void Build(){
         Board.Build(MainController.displayingHex, CanvasController.currentPlanetDisplayed, new AssualtShip());

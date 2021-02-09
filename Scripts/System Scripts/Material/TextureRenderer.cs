@@ -152,13 +152,13 @@ public class TextureRenderer : MonoBehaviour
 				colourMap [y * width + x] = Color.Lerp(Color.black, Color.white, noiseMap[x, y]);
 			}
 		}
-        Vector3[] normals;
+        //Vector3[] normals;
         Vector3[,] gradients = new Vector3[height, width];
         Color[] normalMap = new Color[colourMap.Length];
         for(int y = 0, i = 0; y < height; y++){
             for(int x = 0; x < width; x++, i++){
-                float changeInX = 0.0f;
-                float changeInY = 0.0f;
+                //float changeInX = 0.0f;
+                //float changeInY = 0.0f;
 
                 int values = 0;
                 Vector3 v = new Vector3(0,0,1);
@@ -256,7 +256,7 @@ public class TextureRenderer : MonoBehaviour
 
     private void ApplyTextureToMaterial(Texture2D texture, MeshRenderer mr){
         mr.sharedMaterial.mainTexture = texture;
-        mr.castShadows = false;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Material mat = mr.materials[0];
         mat.SetTexture("Clouds", texture);
     }

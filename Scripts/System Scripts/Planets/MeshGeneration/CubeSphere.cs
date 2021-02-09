@@ -21,6 +21,7 @@ public class CubeSphere : MonoBehaviour
 	//These two bools are, because I am using these solely to generate planets, to determine what point in the planet-making process we're at
 	public bool IsAtmosphere = true;
 	public bool IsClouds = false;
+	public bool IsStar = false;
 
     private Vector3[] vertices;
     private Vector3[] normals;
@@ -33,6 +34,7 @@ public class CubeSphere : MonoBehaviour
 	public static Material Atmosphere;
 	public static Material Planet;
 	public static Material Clouds;
+	public static Material Star;
 
 
     void Awake(){
@@ -53,6 +55,10 @@ public class CubeSphere : MonoBehaviour
 		//mesh.subMeshCount = 3;
         //TextureRenderer tr = GetComponentInChildren<TextureRenderer>();
 		//Each planet object we set the child to the current object containing this planet; so it's organized and we can work with it later
+		if(IsStar){
+			gameObject.name = "Star";
+			mr.material = Star;
+		} else 
 		if(!IsAtmosphere && planetsGened < 6){
 			//Generates the body of the planet
 			gameObject.name = "Body";
@@ -73,7 +79,7 @@ public class CubeSphere : MonoBehaviour
 			//Generates the atmosphere of the planet
 			gameObject.name = "Atmosphere";
 			mr.material = Atmosphere;
-			mr.castShadows = false;
+			mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 			//tr.WorkWithAtmosphere(this.gameObject);
 			//gridSize += 1;
 			CubeSphere sphere = Instantiate(this);
@@ -87,7 +93,7 @@ public class CubeSphere : MonoBehaviour
 			//Generates the clouds of the planet
 			gameObject.name = "Clouds";
 			mr.material = Clouds;
-			mr.castShadows = false;
+			mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 		}
 
 		//Sets the width,height,and length to the grid size
@@ -325,14 +331,14 @@ public class CubeSphere : MonoBehaviour
 	public void SetColor(Color col){
 		MeshRenderer mr = GetComponent<MeshRenderer>();
 		//mr.sharedMaterial.mainTexture = texture;
-		mr.castShadows = false;
+		mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         mr.material.SetColor("Color_F1E7D8FD", col);
 	}
 
 	//Sets the texture of the clouds
 	public void SetClouds(Texture2D texture){
 		MeshRenderer mr = GetComponent<MeshRenderer>();
-		mr.castShadows = false;
+		mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 		mr.material.SetTexture("Texture2D_FDA423C8", texture);
 
 	}
