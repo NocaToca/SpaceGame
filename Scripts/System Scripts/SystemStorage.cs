@@ -47,7 +47,7 @@ public class SystemStorage : MonoBehaviour
         //If we're loading the scene, load it
         if(LoadScene){
             CubeSphere.Star = Star;
-            radius = 10.0f;
+            radius = 20.0f;
             //gm.radius = radius;
             //gm.PlaceStar(GameObject.FindGameObjectsWithTag("SystemManager")[0]);
             LoadSystem(MainController.displayingHex);

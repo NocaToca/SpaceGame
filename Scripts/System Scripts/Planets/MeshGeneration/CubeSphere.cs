@@ -59,7 +59,7 @@ public class CubeSphere : MonoBehaviour
 			gameObject.name = "Star";
 			mr.material = Star;
 		} else 
-		if(!IsAtmosphere && planetsGened < 6){
+		if(!IsAtmosphere){
 			//Generates the body of the planet
 			gameObject.name = "Body";
 			mr.material = Planet;

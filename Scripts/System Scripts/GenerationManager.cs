@@ -11,6 +11,9 @@ public class GenerationManager
     public static Material Atmosphere;
     public static Material Clouds;
 
+    public static int timesSwaped = 0;
+    public float angleFromCenter;
+
     public int displayingPlanet = 0;
 
     public float radius = 7.5f;
@@ -104,9 +107,11 @@ public class GenerationManager
     }
 
     public void PlacePlanets(){
+        timesSwaped = 0;
         if(planets.Count == 0){
             return;
         }
+        //float radius = this.radius * 2.0f;
         if(planets.Count == 1){
             Vector3 pos = new Vector3(-radius,0,0);
             planets[0].transform.position = pos;
@@ -115,7 +120,7 @@ public class GenerationManager
         }
         int val = planets.Count;
         float increment = 360.0f / val;
-        for(float angle = 180.0f, i = 0; angle < 540.0f; angle += increment, i += 1.0f){
+        for(float angle = angleFromCenter, i = 0; angle < 360.0f + angleFromCenter; angle += increment, i += 1.0f){
             float x = Mathf.Cos(angle * Mathf.Deg2Rad) * radius;
             float y = Mathf.Sin(angle * Mathf.Deg2Rad) * radius;
             Vector3 pos = new Vector3(x, 0, y);
@@ -125,11 +130,16 @@ public class GenerationManager
         }
     }
 
+    public void SetPlanetPos(){
+        Vector3 primePlanetPos = planets[0].transform.position;
+        angleFromCenter = Mathf.Atan(primePlanetPos.z/primePlanetPos.x) * Mathf.Rad2Deg;
+    }
+
     public bool MovePlanets(){
         lerp += .01f;
-        float angleOffset = Mathf.Lerp(0, 180, lerp);
-        angleOffset *= Mathf.Deg2Rad;
         int val = planets.Count;
+        float angleOffset = Mathf.Lerp(0, 360/val, lerp);
+        angleOffset *= Mathf.Deg2Rad;
         float increment = 360.0f / val;
         for(float angle = 180.0f, i = 0; angle < 540.0f; angle += increment, i += 1.0f){
             float x = Mathf.Cos((angle * Mathf.Deg2Rad) + angleOffset) * radius;
@@ -150,6 +160,7 @@ public class GenerationManager
         }
         pla.Add(planets[0]);
         planets = pla;
+        timesSwaped++;
     }
 
     public void PlaceStar(GameObject system){
@@ -172,6 +183,8 @@ public class GenerationManager
     //Loads the information stored in the generation script
     public void Load(GameObject system){
         //GameObject system = GameObject.FindGameObjectsWithTag("SystemManager")[0]
+        gameObjectsLoaded.Clear();
+        planets.Clear();
         //We basically just create each planet
         for(int i = 0; i < planetTextures.Count; i++){
             GameObject planet = new GameObject("Planet");
@@ -213,6 +226,7 @@ public class GenerationManager
             Object.Destroy(planet, 0.0f);
         }
         gameObjectsLoaded.Clear();
+        planets.Clear();
     }
 
     //Generates a system based off of the hex

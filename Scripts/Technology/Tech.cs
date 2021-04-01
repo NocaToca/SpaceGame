@@ -22,6 +22,7 @@ public class Tech{
     //Adds a tech to queue
     public void AddToQueue(){
         GameMode.AddToTechQueue(this, Board.GetPlayerEmpire());
+        CanvasController.buttonPress = true;
         CanvasController.Clear();
     }
 
