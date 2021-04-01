@@ -58,12 +58,15 @@ public class CanvasController : MonoBehaviour
     public Button ScrollRightInFleets;
     public Button ScrollLeftInFleets;
     public Text ShipNameText;
+    public Button EndTurnButton;
+    public Button ResearchButton;
     
 /********************************************************************Button Call Functions************************************************************/
     //These functions are called by our buttons on our UI
 
     //Ending the player's turn is done by the gamemode
     public void EndTurn(){
+        if(!GameMode.isPlayerTurn(Board.GetEmpireNumber(Board.GetPlayerEmpire()))){}
         GameMode.EndTurn(Board.GetPlayerEmpire());
         UpdateResourceDisplay();
         buttonPress = true;
@@ -550,6 +553,8 @@ public class CanvasController : MonoBehaviour
                 button.image.color = new Color(.5f, .5f, .5f, 1f);
             }
 
+            button.gameObject.SetActive(true);
+
             Text text = button.gameObject.GetComponentInChildren<Text>();
             text.text = "" + ships.Length;
 
@@ -711,6 +716,16 @@ public class CanvasController : MonoBehaviour
 
     }
 
+    public void UpdateButtons(){
+        if(GameMode.isPlayerTurn(Board.GetPlayerEmpire())){
+            EndTurnButton.interactable = true;
+            ResearchButton.interactable = true;
+        } else {
+            EndTurnButton.interactable = false;
+            ResearchButton.interactable = false;
+        }
+    }
+
     /*********************************************************************Interacting With Ships**********************************************************************************/
     //Almost all of these functions are self explanatory 
     public void MoveShip(){
@@ -735,6 +750,23 @@ public class CanvasController : MonoBehaviour
         }
     }
 
+    public void CreateFleet(){
+        Ship[] shipsOnHex = Board.ShipsOnHex(MainController.displayingHex);
+
+        int shipMax = Board.GetPlayerEmpire().fleetSize;
+        int ships = 0;
+
+        List<Ship> shipsinFleet = new List<Ship>();
+        foreach(Ship ship in shipsOnHex){
+            if(ships + ship.space <= shipMax){
+                ships += ship.space;
+            } else {
+                break;
+            }
+        }
+        Board.CreateFleet(Board.GetEmpireNumber(Board.GetPlayerEmpire()), shipsinFleet);
+    }
+
     public void BuildOnPlanet(){
         buttonPress = true;
         if(!BuildMenuDisplaying){
@@ -756,6 +788,7 @@ public class CanvasController : MonoBehaviour
     public void Fight(){
         buttonPress = true;
         Board.Fight();
+        ShowUnitButtonsOnCanvas();
     }
 
     public void IncrementFleetIndex(){
@@ -818,18 +851,18 @@ public class CanvasController : MonoBehaviour
         }
         currentFleetDisplayed %= fleets.Count;
 
-        if(Board.DoesHexHaveOpposingFleets(hex)){
+        if(Board.DoesHexHaveOpposingFleets(hex) && GameMode.isPlayerTurn(Board.GetPlayerEmpire())){
             FightButton.interactable = true;
         } else {
             FightButton.interactable = false;
         }
-        if(fleets[currentFleetDisplayed].GetMovePoints() >= 1 && Board.GetPlayerEmpire() == Board.GetShipEmpire(fleets[currentFleetDisplayed].shipsInFleet[0])){
+        if(fleets[currentFleetDisplayed].GetMovePoints() >= 1 && Board.GetPlayerEmpire() == Board.GetShipEmpire(fleets[currentFleetDisplayed].shipsInFleet[0]) && GameMode.isPlayerTurn(Board.GetPlayerEmpire())){
             MoveButton.interactable = true;
         } else {
             MoveButton.interactable = false;
         }
-        if(fleets.Count > 1){
-            CreateFleetButton.interactable = true;
+        if(fleets.Count > 1 && !Board.DoesHexHaveOpposingFleets(hex)){
+            CreateFleetButton.interactable = GameMode.isPlayerTurn(Board.GetPlayerEmpire()) && Board.GetPlayerEmpire() == Board.GetShipEmpire(fleets[currentFleetDisplayed].shipsInFleet[0]);
             ScrollLeftInFleets.gameObject.SetActive(true);
             ScrollRightInFleets.gameObject.SetActive(true);
         } else {
@@ -837,7 +870,6 @@ public class CanvasController : MonoBehaviour
             ScrollRightInFleets.gameObject.SetActive(false);
             ScrollLeftInFleets.gameObject.SetActive(false);
         }
-
         ShipNameText.gameObject.SetActive(true);
         ShipNameText.text = fleets[currentFleetDisplayed%fleets.Count].shipsInFleet[0].name;
     }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public class GameMode : MonoBehaviour
 {
@@ -10,6 +11,67 @@ public class GameMode : MonoBehaviour
     static List<Resource> empireResource = new List<Resource>();
     static List<List<Tech>> empireTechs = new List<List<Tech>>();
     static List<List<Tech>> empireTechQueues = new List<List<Tech>>();
+
+    static List<Player> players = new List<Player>();
+
+    static Player currentPlayer;
+    static int turnNumber;
+
+    public static Thread processingThread = new Thread(ProcessTurn);
+
+    static Empire empire;
+
+    public static void StartGame(){
+        if(players == null){
+            Debug.LogError("You haven't initialized the players before starting the game!");
+        }
+        currentPlayer = players[0];
+    }
+
+    public static void NextPlayer(){
+        int index = turnNumber%players.Count;
+        bool ai = !players[index].human;
+        if(ai){
+            MainAI.MakeMove(players[index].empire);
+        }
+    }
+
+    public static void ProcessTurn(){
+        Resource GeneratedRevenure = Board.GetEmpiresGeneration(empire);
+
+        int index = Board.GetEmpireNumber(empire);
+        empireResource[index] = GeneratedRevenure.Add(empireResource[index]);
+
+        List<Planet> planets = Board.GetPlanets(empire);
+        for(int i = 0; i < planets.Count; i++){
+            planets[i].BuildQueue();
+        }
+
+        players[turnNumber%players.Count].turn = false;
+        turnNumber++;
+        players[turnNumber%players.Count].turn = true;
+
+        Board.ResetShipMovementPoints(empire);
+        HandleTechQueue(empire);
+        
+        MoveNomadShips();
+        AI.DoTurn();
+        //NextPlayer();
+
+        //processingThread.Abort();
+    }
+
+    public static bool isPlayerTurn(int empire){
+        return players[empire].turn;
+    }
+
+    public static bool isPlayerTurn(Empire empire){
+        return players[Board.GetEmpireNumber(empire)].turn;
+    }
+
+    public static void AddPlayer(Player player){
+        players.Add(player);
+    }
 
     //Adds the resoucres to the empire's stock
     public static void AddEmpireResource(Resource resource){
@@ -41,21 +103,12 @@ public class GameMode : MonoBehaviour
 
     //Ends the turn of the empire, adding all of the Resource it generated up and moving to the next
     public static void EndTurn(Empire empire){
-        Resource GeneratedRevenure = Board.GetEmpiresGeneration(empire);
-
-        int index = Board.GetEmpireNumber(empire);
-        empireResource[index] = GeneratedRevenure.Add(empireResource[index]);
-
-        List<Planet> planets = Board.GetPlanets(empire);
-        for(int i = 0; i < planets.Count; i++){
-            planets[i].BuildQueue();
-        }
-
-        Board.ResetShipMovementPoints(empire);
-        HandleTechQueue(empire);
+        GameMode.empire = empire;
+        NextPlayer();
+        processingThread.Start();
+        MainController.canvasController.UpdateButtons();
         CanvasController.Clear();
-        MoveNomadShips();
-        AI.DoTurn();
+        
     }
 
     //returns the Resource of the player
@@ -150,5 +203,17 @@ public class GameMode : MonoBehaviour
 
     public static int EmpireFleetSize(int empire){
         return SetEmpireFleetLimit(Board.empires[empire]);
+    }
+}
+
+public class Player{
+    public readonly Empire empire;
+    public readonly bool human;
+    public bool turn;
+
+    public Player(Empire empire, bool human, bool turn){
+        this.empire = empire;
+        this.human = human;
+        this.turn = turn;
     }
 }

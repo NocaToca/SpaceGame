@@ -31,6 +31,7 @@ public class PlanetController : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.Space)){
             SystemStorage.gm.movingAngle = 540 * Mathf.Deg2Rad;
             SystemStorage.gm.lerp = 0.0f;
+            SystemStorage.gm.SetPlanetPos();
             moving = true;
         }
     }

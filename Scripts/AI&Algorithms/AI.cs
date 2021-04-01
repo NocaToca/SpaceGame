@@ -38,8 +38,10 @@ public class AI : MonoBehaviour
             }
         }
 
+        System.Random _ran = new System.Random();
+
         //Simply just generating a random number in the list
-        int rand = Random.Range(0, positions.Count-1);
+        int rand = _ran.Next(0, positions.Count-1);
         Board.RequestMovement(positions[rand], ship);
     } 
 

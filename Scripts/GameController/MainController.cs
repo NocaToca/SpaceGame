@@ -33,9 +33,11 @@ public class MainController : MonoBehaviour
 
     bool waitingForCompletion = false;
 
-    Vector3 previousWorldSpace = new Vector3(0,0,0);
+    static Vector3 previousWorldSpace = new Vector3(0,0,0);
 
-
+    public static Vector3 GetWorldSpace(){
+        return previousWorldSpace;
+    }
     // Start is called before the first frame update
     void Start()
     {
@@ -43,6 +45,7 @@ public class MainController : MonoBehaviour
         GetCanvasController();
         prevPlanetIndex = 0;
         canvasController.RequestRedisplayOfResources();
+        Camera.main.transform.position = previousWorldSpace;
     }
 
     //Getting the board in the scene
@@ -238,7 +241,7 @@ public class MainController : MonoBehaviour
         Empire empire = Board.empires[0];
         
         Board.ColonizePlanet(empire, hex, index);
-        canvasController.DisplayHex(hex);
+        //canvasController.DisplayHex(hex);
     }
 
     //Called when we request to move a ship

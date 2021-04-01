@@ -30,6 +30,11 @@ public class PlanetCanvasMain : MonoBehaviour
 
     private SystemStorage storage;
 
+    public static void Refresh(){
+        SystemStorage.index--;
+        SystemStorage.ShowPlanetInfo();
+    }
+
     public void ShowPlanetInfo(Planet planet){
         if(planet == null){
             HideMenus();
@@ -45,6 +50,16 @@ public class PlanetCanvasMain : MonoBehaviour
         }
         ShowBuildings(planet);
         ShowPops(planet);
+    }
+
+    public void ColonizePlanet(){
+        //buttonPress = true;
+        SystemHex sys = (SystemHex)MainController.displayingHex;
+        if(sys != null){
+            MainController.Colonize(sys, SystemStorage.index);
+        } else {
+            Debug.LogError("Error! You have asked to colonize a planet on a tile that isnt a system! Is the button working properly?");
+        }
     }
 
     private void HideMenus(){
@@ -104,6 +119,8 @@ public class PlanetCanvasMain : MonoBehaviour
         int Length = buildings.Count;
         Length += availableUnits.Count;
 
+        bool buttonsInteractable =  GameMode.isPlayerTurn(Board.GetPlayerEmpire()) && Board.GetEmpireOwningPlanet(planet) == Board.GetPlayerEmpire();
+
         buttons.Clear();
         for(int i = 0; i < Length; i++){
             buttons.Add(Instantiate(TemplateButton));
@@ -118,6 +135,7 @@ public class PlanetCanvasMain : MonoBehaviour
                 text.text = availableUnits[i - buildings.Count].name;
                 buttons[i].onClick.AddListener(availableUnits[i - buildings.Count].Build);
             }
+            buttons[i].interactable = buttonsInteractable;
         }
 
         Image image = ContentImage;
@@ -159,7 +177,7 @@ public class PlanetCanvasMain : MonoBehaviour
     }
 
     private void UpdateButtons(Planet planet){
-        ColonizeButton.interactable = PCL.DeterminePlanetColonizable(planet);
+        ColonizeButton.interactable = PCL.DeterminePlanetColonizable(planet) && GameMode.isPlayerTurn(Board.GetPlayerEmpire());
     }
 
     private void ShowUnits(){

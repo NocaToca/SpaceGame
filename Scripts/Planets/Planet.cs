@@ -127,8 +127,8 @@ public class Planet
         float goal = GetNextFoodAmount();
         if(food >= goal){
             List<Pops> typesOfPops = GetTypesOfPops();
-            int ran = Random.Range(0, typesOfPops.Count - 1);
-            popsOnPlanet.Add(typesOfPops[ran]);
+            //int ran = Random.Range(0, typesOfPops.Count - 1);
+            popsOnPlanet.Add(typesOfPops[0]);
         }
     }
 

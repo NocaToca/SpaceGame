@@ -49,6 +49,9 @@ public class Board : MonoBehaviour
 
     public static bool initialized = false;
 
+    static bool RequestShipUpdate = false;
+    static bool getReadyToUpdate = false;
+
 
 /***************************************************************************Starting Functions**********************************************************************/
     //In the awake function, we want to get the cell generation component for use and set the width and height, along with instantiating the units list
@@ -122,12 +125,15 @@ public class Board : MonoBehaviour
     void SpawnEmpires(){
 
         ///How many empires we will want to spawn, static until further implemtation 
-        int empireCount = 1;
+        int empireCount = 2;
         empires = new List<Empire>();
+        List<Color> empColors = new List<Color>();
+        empColors.Add(new Color(1.0f, .67f, 0.0f));
+        empColors.Add(new Color(.192f, .929f, .309f));
 
         //Spawning each empire and setting up their cooresponding lists
         for(int i = 0; i < empireCount; i++){
-            empires.Add(new Empire((new Color(1.0f, .67f, 0.0f)), i));
+            empires.Add(new Empire(empColors[i], i));
             List<Hex> empHex = new List<Hex>();
             tilesOfEmpires.Add(empHex);
             List<Unit> empUnit = new List<Unit>();
@@ -157,16 +163,37 @@ public class Board : MonoBehaviour
         unitsOfEmpires[0].Add(addingUnits[0]);
         unitsOfEmpires[0].Add(addingUnits[1]);
 
-
         //Cast is just so I can get the S function and colonize the empire's starting planet
         if(systemHexes[ran].hex is SystemHex){
             SystemHex sysHex = (SystemHex)systemHexes[ran].hex;
             sysHex.planets[0].Colonize(empires[0]);
         }
-        
 
         units.Add(addingUnits[0]);
         units.Add(addingUnits[1]);
+
+        systemHexes.Remove(systemHexes[ran]);
+        ran = Random.Range(0, systemHexes.Count);
+        TakeControl(systemHexes[ran].hex, empires[1]);
+
+        addingUnits = new Ship[2];
+        addingUnits[0] = new ColonyShip(empires[1], GetHexPosition(systemHexes[ran].hex));
+        addingUnits[1] = new ProtectorShip(empires[1], GetHexPosition(systemHexes[ran].hex));
+
+        unitsOfEmpires[1].Add(addingUnits[0]);
+        unitsOfEmpires[1].Add(addingUnits[1]);
+
+        //Cast is just so I can get the S function and colonize the empire's starting planet
+        if(systemHexes[ran].hex is SystemHex){
+            SystemHex sysHex = (SystemHex)systemHexes[ran].hex;
+            sysHex.planets[0].Colonize(empires[1]);
+        }
+
+        units.Add(addingUnits[0]);
+        units.Add(addingUnits[1]);
+
+        GameMode.AddPlayer(new Player(empires[0], true, true));
+        GameMode.AddPlayer(new Player(empires[1], false, false));
 
         cellGen.makeCells();
 
@@ -249,6 +276,10 @@ public Hex GetHexNearestToPos(Vector3 pos){
     //Using the hex position of the ship, we just return the hex the ship is on
     public static Hex GetHexShipOn(Ship ship){
         return GetHexFromHexCoords(ship.ShipPosition);
+    }
+
+    public static List<Hex> GetEmpireHexes(Empire empire){
+        return tilesOfEmpires[GetEmpireNumber(empire)];
     }
 
     //A filter function to return a certain number of hexes 
@@ -360,7 +391,8 @@ public Hex GetHexNearestToPos(Vector3 pos){
         foreach(Ship ship in fleet.shipsInFleet){
             ship.ShipPosition = pos;
         }
-        MainController.canvasController.ShowUnitButtonsOnCanvas();
+        //MainController.canvasController.ShowUnitButtonsOnCanvas();
+        RequestShipUpdate = true;
     }
 
     //Checks if theres a colony ship on the tile
@@ -501,7 +533,7 @@ public Hex GetHexNearestToPos(Vector3 pos){
         ship.ShipPosition = GetHexPosition(hex);
         ship.OwningEmpire = GetEmpireOwningPlanet(planet);
         planet.GetStarport().AddToQueue(ship);
-        CanvasController.Clear();
+        //CanvasController.Clear();
     }
 
     //Adds a ship to the list of units that we have. Used mostly for newly built ships
@@ -764,13 +796,15 @@ public Hex GetHexNearestToPos(Vector3 pos){
         SystemHex sysHex = (SystemHex)hex;
         if(sysHex != null){
             sysHex.AddColonizedPlanet(index);
+            sysHex.planets[index%sysHex.planets.Length].Colonize(empire);
             DestroyShip(FilterColonyShips(ShipsOnHex(hex, empire))[0]);
             int i = GetEmpireNumber(empire);
             tilesOfEmpires[i].Add(sysHex);
+            PlanetCanvasMain.Refresh();
         } else {
             Debug.LogError("You have asked to colonize a system that doesn't exist! Was the system tile perhaps post-generated?");
         }
-        cellGen.makeCells();
+        //cellGen.makeCells();
     }
 
     //Using the planet number and hex that it is on, return the planet referring to the index (index higher than the planet array length are accepted, but indexes lower than 0 will cause a seperate error)
@@ -833,7 +867,8 @@ public Hex GetHexNearestToPos(Vector3 pos){
         Planet planet = GetPlanet(hex, index);
         building.pos = GetHexPosition(hex);
         planet.AddToQueue(building);
-        CanvasController.Clear();
+        PlanetCanvasMain.Refresh();
+        //CanvasController.Clear();
     }
 
 /************************************************************************************Empire functions****************************************************************/
@@ -971,7 +1006,20 @@ public Hex GetHexNearestToPos(Vector3 pos){
             cellGen.makeCells();
             RequestUpdate = false;
         }
-        
+        if(RequestShipUpdate){
+            MainController.canvasController.ShowUnitButtonsOnCanvas();
+            RequestShipUpdate = false;
+        }
+        if(GameMode.processingThread.IsAlive && !getReadyToUpdate){
+            getReadyToUpdate = true;
+            MainController.canvasController.UpdateButtons();
+            CanvasController.Clear();
+        }
+        if(!GameMode.processingThread.IsAlive && getReadyToUpdate){
+            MainController.canvasController.UpdateButtons();
+            MainController.canvasController.RequestRedisplayOfResources();
+            CanvasController.Clear();
+        }
 	}
 
     //Highlights hexes a certain colour.

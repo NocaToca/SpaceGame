@@ -49,7 +49,7 @@ public class SystemHex : Hex{
     }
 
     public void AddColonizedPlanet(int index){
-        planetsColonized[index] = true;
+        planetsColonized[index%planets.Length] = true;
         planets[index%planets.Length].Colonized = true;
     }
 
